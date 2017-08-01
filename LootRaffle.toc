@@ -1,0 +1,10 @@
+## Interface: 70200
+## Title: LootRaffle
+## Author: Taunkah - Doomhammer
+## Version: 0.1
+## SavedVariables: LootRaffle_DB
+
+Constants.lua
+Main.lua
+LootRaffle.xml
+Events.lua

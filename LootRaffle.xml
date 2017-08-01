@@ -1,0 +1,4 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <Frame name="LootRaffle_Frame" toplevel="true" movable="true" resizable="true" enableMouse="true" parent="UIParent" inherits="BasicFrameTemplate" hidden="true">
+    </Frame>
+</Ui>
