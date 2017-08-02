@@ -17,3 +17,6 @@ This addon allows players to easily share rare loot during dungeon or raid encou
 - Multiple simultaneous roll windows
 - Multiple roll buttons (Need/Greed)
 - Player distance detection and auto-retry trading
+- Class set-piece filtering
+- Relic type filtering
+- End roll as soon as all eligible players roll or pass
