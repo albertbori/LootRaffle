@@ -13,10 +13,11 @@ LootRaffle = {
     end,
     MyRaffledItems = {},
     MyRaffledItemsCount = 0,
-    ItemsForGrab = {},
     CurrentTimeInSeconds = 0,
     ItemInfoRequests = {},
-    PendingTrades = {}
+    PendingTrades = {}, --unused (planned)
+    RollWindows = {},
+    RollWindowsCount = 0
 }
 
 -- Add static confirmation dialog
@@ -26,19 +27,6 @@ StaticPopupDialogs["LOOTRAFFLE_PROMPT"] = {
     button2 = "No",
     OnAccept = function(self, data)
         LootRaffle_StartRaffle(data)
-    end,
-    timeout = LootRaffle.RaffleLengthInSeconds,
-    whileDead = true,
-    hideOnEscape = true,
-    preferredIndex = 3,  -- avoid some UI taint, see http://www.wowace.com/announcements/how-to-avoid-some-ui-taint/
-}
-
-StaticPopupDialogs["LOOTRAFFLE_ROLL"] = {
-    text = "%s is giving away %s. Would you like to roll on it?",
-    button1 = "Yes",
-    button2 = "No",
-    OnAccept = function(self, data)
-        LootRaffle_Roll(data.itemLink, data.playerName, data.playerRealm)
     end,
     timeout = LootRaffle.RaffleLengthInSeconds,
     whileDead = true,
@@ -59,25 +47,30 @@ end
 
 function LootRaffle_StartRaffle(itemLink)
     LootRaffle.Log("LootRaffle_StartRaffle(", itemLink, ")")
-    table.insert(LootRaffle.MyRaffledItems, { itemLink = itemLink, timeInSeconds = LootRaffle.CurrentTimeInSeconds, Rollers = {}, RollerCount = 0 })
+    local raffle = { itemLink = itemLink, timeInSeconds = LootRaffle.CurrentTimeInSeconds, Rollers = {}, RollerCounts = {} }
+    for i,rollType in ipairs(LootRaffle_ROLLTYPES) do
+        raffle.RollerCounts[rollType] = 0
+        raffle.Rollers[rollType] = {}
+    end
+    table.insert(LootRaffle.MyRaffledItems, raffle)
     LootRaffle.MyRaffledItemsCount = LootRaffle.MyRaffledItemsCount + 1
     SendAddonMessage(LootRaffle.NEW_RAFFLE_MESSAGE, strjoin("^", UnitName('player'), GetRealmName(), itemLink), LootRaffle_GetCurrentChannelName())
-    SendChatMessage("I'm giving away "..itemLink.." using the LootRaffle addon. (Download on Curse)", LootRaffle_GetCurrentChannelName())
+    SendChatMessage("I'm giving away "..itemLink.." using the LootRaffle addon. (Download it on Curse)", LootRaffle_GetCurrentChannelName())
 end
 
-function LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName)
+function LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType)
     for i, raffle in ipairs(LootRaffle.MyRaffledItems) do
         -- try to find the raffle in question
         if raffle.itemLink == itemLink then
             -- check if player has already "rolled"
-            for x, roller in ipairs(raffle.Rollers) do
+            for x, roller in ipairs(raffle.Rollers[rollType]) do
                 if roller.playerName == playerName and roller.realmName == playerRealmName then
                     return
                 end
             end
 
-            table.insert(raffle.Rollers, { playerName = playerName, realmName = playerRealmName })
-            raffle.RollerCount = raffle.RollerCount + 1
+            table.insert(raffle.Rollers[rollType], { playerName = playerName, realmName = playerRealmName })
+            raffle.RollerCounts[rollType] = raffle.RollerCounts[rollType] + 1
             break
         end
     end
@@ -99,15 +92,22 @@ end
 
 function LootRaffle_EndRaffle(raffle)
     LootRaffle.Log("LootRaffle_EndRaffle(", raffle, ")")
-    table.remove(LootRaffle.MyRaffledItems, i)
+    for i,raffle in ipairs(LootRaffle.MyRaffledItems) do
+        if raffle.itemLink == raffle.itemLink then
+            table.remove(LootRaffle.MyRaffledItems, i)
+        end
+    end
+
     LootRaffle.MyRaffledItemsCount = LootRaffle.MyRaffledItemsCount - 1
-    if raffle.RollerCount > 0 then
-        local winner = raffle.Rollers[math.random(raffle.RollerCount)]
-        SendChatMessage(winner.playerName.."-"..winner.realmName.." has won "..raffle.itemLink..".", LootRaffle_GetCurrentChannelName())
-        LootRaffle_AwardItem(raffle.itemLink, winner.playerName, winner.realmName)
-    else
-        SendChatMessage("No one wanted "..raffle.itemLink..".", LootRaffle_GetCurrentChannelName())
-    end            
+    for i,rollType in ipairs(LootRaffle_ROLLTYPES) do
+        if rollType ~= "PASS" and raffle.RollerCounts[rollType] > 0 then
+            local winner = raffle.Rollers[rollType][math.random(raffle.RollerCounts[rollType])]
+            SendChatMessage(winner.playerName.."-"..winner.realmName.." has won "..raffle.itemLink.." using " .. rollType .. ".", LootRaffle_GetCurrentChannelName())
+            LootRaffle_AwardItem(raffle.itemLink, winner.playerName, winner.realmName)
+            return
+        end
+    end
+    SendChatMessage("No one wanted "..raffle.itemLink..".", LootRaffle_GetCurrentChannelName())        
 end
 
 function LootRaffle_AwardItem(itemLink, playerName, playerRealmName)
@@ -156,14 +156,51 @@ function LootRaffle_ShowRollWindow(itemLink, playerName, playerRealmName)
     if not LootRaffle_CanUseItem(itemLink) then
         return
     end
-    -- table.insert(LootRaffle.ItemsForGrab, { itemLink = itemLink, timeInSeconds = LootRaffle.CurrentTimeInSeconds, Rollers = {}, RollerCount = 0 })
-    local popup = StaticPopup_Show("LOOTRAFFLE_ROLL", playerName.."-"..playerRealmName, itemLink)
-    popup.data = { itemLink = itemLink, playerName = playerName, playerRealmName = playerRealmName }
+    LootRaffle.Log("Showing roll window...")
+    local name, link, quality, itemLevel, requiredLevel, itemClass, itemSubClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemLink)
+
+    local rollWindow = CreateFrame("Frame", "LootRaffle_RollWindow_" .. (LootRaffle.RollWindowsCount + 1), LootRaffle_Frame, "LootRaffle_RollWindowTemplate")
+    rollWindow.data = { itemLink = itemLink, playerName = playerName, playerRealmName = playerRealmName, createdTimeInSeconds = LootRaffle.CurrentTimeInSeconds, elapsedTimeInSeconds = 0 }
+    rollWindow.Timer:SetMinMaxValues(0, LootRaffle.RaffleLengthInSeconds)
+    rollWindow.IconFrame.Icon:SetTexture(texture)
+    rollWindow.Name:SetText(name)
+
+	local color = ITEM_QUALITY_COLORS[quality];
+	rollWindow.Name:SetVertexColor(color.r, color.g, color.b);
+	rollWindow.Border:SetVertexColor(color.r, color.g, color.b);
+	rollWindow.IconFrame.Border:SetAtlas(LOOT_BORDER_BY_QUALITY[quality] or LOOT_BORDER_BY_QUALITY[LE_ITEM_QUALITY_UNCOMMON]);
+
+    local verticalOffset = (77 * LootRaffle.RollWindowsCount)
+    rollWindow:SetPoint("CENTER",0,verticalOffset)
+    rollWindow:Show()
+    LootRaffle.RollWindowsCount = LootRaffle.RollWindowsCount + 1
 end
 
-function LootRaffle_Roll(itemLink, playerName, playerRealmName)
-    LootRaffle.Log("LootRaffle_Roll(", itemLink, ", ", playerName, ", ", playerRealmName, ")")
-    SendAddonMessage(LootRaffle.ROLL_ON_ITEM_MESSAGE, strjoin("^", UnitName('player'), GetRealmName(), itemLink), LootRaffle_GetCurrentChannelName())
+function LootRaffle_Roll(self, rollType)
+    local parent = self:GetParent()
+    parent:Hide()
+    LootRaffle.RollWindowsCount = LootRaffle.RollWindowsCount - 1
+    LootRaffle.Log("LootRaffle_Roll(", parent.data.itemLink, ", ", parent.data.playerName, ", ", parent.data.playerRealmName, ")")
+    SendAddonMessage(LootRaffle.ROLL_ON_ITEM_MESSAGE, strjoin("^", UnitName('player'), GetRealmName(), parent.data.itemLink, rollType), LootRaffle_GetCurrentChannelName())
+end
+
+function LootRaffle_OnRollWindowUpdate(self, elapsed)
+    local parent = self:GetParent()
+    parent.data.elapsedTimeInSeconds = parent.data.elapsedTimeInSeconds + elapsed
+
+    -- check for expiration
+    if parent.data.elapsedTimeInSeconds >= LootRaffle.RaffleLengthInSeconds then
+        LootRaffle.RollWindowsCount = LootRaffle.RollWindowsCount - 1
+        parent:Hide()
+        return
+    end
+
+	local left = math.max(LootRaffle.RaffleLengthInSeconds - parent.data.elapsedTimeInSeconds, 0)
+	local min, max = self:GetMinMaxValues();
+	if ( (left < min) or (left > max) ) then
+		left = min;
+	end
+	self:SetValue(left);
 end
 
 -- -------------------------------------------------------------
@@ -176,7 +213,7 @@ function LootRaffle_GetCurrentChannelName()
     elseif IsInGroup() then
         return "PARTY"
     else
-        return "SAY"
+        return "PARTY"
     end
 end
 
@@ -212,5 +249,10 @@ function LootRaffle_CanUseItem(itemLink)
     end
 
     LootRaffle.Log("Player CANNOT use "..itemClass.." of type "..itemSubClass)
-    return false
+    return true
+end
+
+
+function LootRaffle_GetItemIconBorderAtlas(quality)
+    return "loottoast-itemborder-blue"
 end

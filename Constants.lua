@@ -11,6 +11,8 @@ LootRaffle_ItemQuality = {
     Heirloom = 7
 }
 
+LootRaffle_ROLLTYPES = { "NEED", "GREED", "DE", "PASS" }
+
 LootRaffle_ClassProficiencies = {}
 LootRaffle_ClassProficiencies["DEATHKNIGHT"] = {
     Armor = { "Plate" },

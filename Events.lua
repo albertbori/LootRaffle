@@ -15,6 +15,10 @@ function SlashCmdList.LootRaffle(msg, editbox)
     elseif msg == "logging off" then
         LootRaffle.LoggingEnabled = false
         print("LootRaffle: Logging disabled.")
+    elseif msg == "test" then
+        local itemLink = GetContainerItemLink(0, 1)
+        print(itemLink)
+        LootRaffle_ShowRollWindow(itemLink, "Lootraffle", "Doomhammer")
     else
         -- try for item
         local name, link, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(msg)
@@ -63,7 +67,7 @@ end
 
 local function OnMessageRecieved(prefix, message)
     LootRaffle.Log("Addon message received: ", prefix, " | ", message)
-    local playerName, playerRealmName, itemLink = string.split("^", message)
+    local playerName, playerRealmName, itemLink, rollType = string.split("^", message)
     if prefix == LootRaffle.NEW_RAFFLE_MESSAGE and playerName ~= UnitName('player') then
         LootRaffle.Log("New raffle message recieved from: ", playerName, "-", playerRealmName, " for: ", itemLink)
         local name = GetItemInfo(itemLink)
@@ -76,7 +80,7 @@ local function OnMessageRecieved(prefix, message)
         end
     elseif prefix == LootRaffle.ROLL_ON_ITEM_MESSAGE and playerName ~= UnitName('player') then
         LootRaffle.Log("Roll message recieved from: ", playerName, "-", playerRealmName, " for: ", itemLink)
-        LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName)
+        LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType)
     end
 end
 
@@ -93,11 +97,11 @@ local function OnItemInfoRecieved(itemId)
 end
 
 local function OnTradeReqCanceled(...)
-    print("OnTradeReqCanceled", ...)
+    -- print("OnTradeReqCanceled", ...)
 end
 
 local function OnTradeClosed(...)
-    print("OnTradeClosed", ...)
+    -- print("OnTradeClosed", ...)
 end
 
 local function SystemMessageReceived(...)

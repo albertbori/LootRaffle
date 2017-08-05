@@ -20,3 +20,5 @@ This addon allows players to easily share rare loot during dungeon or raid encou
 - Class set-piece filtering
 - Relic type filtering
 - End roll as soon as all eligible players roll or pass
+- Configuration settings (roll length, logging, position)
+- Localization

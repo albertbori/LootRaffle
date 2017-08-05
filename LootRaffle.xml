@@ -1,4 +1,222 @@
-<Ui xmlns="http://www.blizzard.com/wow/ui/">
-    <Frame name="LootRaffle_Frame" toplevel="true" movable="true" resizable="true" enableMouse="true" parent="UIParent" inherits="BasicFrameTemplate" hidden="true">
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ../../../BlizzardInterfaceCode/UI.xsd">
+
+	<Button name="LootRaffle_RollButtonTemplate" motionScriptsWhileDisabled="true" virtual="true">
+		<Size x="32" y="32"/>
+		<Scripts>
+			<!-- <OnClick>
+				RollOnLoot(self:GetParent().rollID, self:GetID());
+			</OnClick>
+			<OnEnter>
+				GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+				GameTooltip_AddNewbieTip(self, self.tooltipText, 1.0, 1.0, 1.0, self.newbieText);
+				if ( not self:IsEnabled() ) then
+					GameTooltip:AddLine(self.reason, RED_FONT_COLOR.r, RED_FONT_COLOR.g, RED_FONT_COLOR.b, true);
+					GameTooltip:Show();
+				end
+			</OnEnter>
+			<OnLeave>
+				GameTooltip:Hide();
+			</OnLeave> -->
+		</Scripts>
+	</Button>
+
+    <Frame name="LootRaffle_RollWindowTemplate" parent="UIParent" toplevel="true" frameStrata="DIALOG" hidden="true" virtual="true">
+		<Size x="277" y="67"/>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<!--LootFrame-Background-->
+				<Texture parentKey="Background" file="Interface\LootFrame\LootToast" setAllPoints="true">
+					<TexCoords left="0.28222656" right="0.55273438" top="0.30859375" bottom="0.57031250"/>
+				</Texture>
+			</Layer>
+			<Layer level="BORDER">
+				<Texture parentKey="Border" file="Interface\LootFrame\LootToast">
+					<Size x="286" y="76"/>
+					<Anchors>
+						<Anchor point="CENTER"/>
+					</Anchors>
+					<TexCoords left="0.00097656" right="0.28027344" top="0.43750000" bottom="0.73437500"/>
+				</Texture>
+			</Layer>
+			<Layer level="ARTWORK">
+				<FontString parentKey="Name" inherits="GameFontNormal" text="Item Name" justifyH="LEFT" justifyV="MIDDLE">
+					<Size x="125" y="30"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" relativeKey="$parent.Background" relativePoint="TOPLEFT" x="60" y="-15"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+		</Layers>
+		<Frames>
+			<Button parentKey="IconFrame" enableMouse="true">
+				<Size x="34" y="34"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeKey="$parent.Background" x="10" y="-13"/>
+				</Anchors>
+				<Layers>
+					<Layer level="ARTWORK">
+						<Texture parentKey="Icon">
+							<Size x="34" y="34"/>
+							<Anchors>
+								<Anchor point="TOPLEFT"/>
+							</Anchors>
+						</Texture>
+					</Layer>
+					<Layer level="OVERLAY">
+						<FontString parentKey="Count" inherits="NumberFontNormal" justifyH="RIGHT" hidden="true">
+							<Anchors>
+								<Anchor point="BOTTOMRIGHT" x="-5" y="2"/>
+							</Anchors>
+						</FontString>
+						<Texture parentKey="Border" atlas="loottoast-itemborder-blue">
+							<Size x="42" y="42"/>
+							<Anchors>
+								<Anchor point="CENTER" x="0" y="0"/>
+							</Anchors>
+						</Texture>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnLoad>
+						self.hasItem = 1;
+					</OnLoad>
+					<!-- <OnEnter>
+						GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+						GameTooltip:SetLootRollItem(self:GetParent().rollID);
+						CursorUpdate(self);
+					</OnEnter>
+					<OnLeave>
+						GameTooltip:Hide();
+						ResetCursor();
+					</OnLeave>
+					<OnUpdate>
+						if ( GameTooltip:IsOwned(self) ) then
+							GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+							GameTooltip:SetLootRollItem(self:GetParent().rollID);
+						end
+						CursorOnUpdate(self);
+					</OnUpdate>
+					<OnClick>
+						HandleModifiedItemClick(GetLootRollItemLink(self:GetParent().rollID));
+					</OnClick> -->
+				</Scripts>
+			</Button>
+			<Button parentKey="NeedButton" inherits="LootRaffle_RollButtonTemplate" id="1">
+				<Anchors>
+					<Anchor point="TOPRIGHT" x="-43" y="-6"/>
+				</Anchors>
+				 <Scripts>
+					<OnLoad>
+						self.tooltipText=NEED;
+						self.newbieText=NEED_NEWBIE;
+					</OnLoad>
+                    <OnClick>
+                        LootRaffle_Roll(self, "NEED")
+                    </OnClick>
+				</Scripts> 
+				<NormalTexture file="Interface\Buttons\UI-GroupLoot-Dice-Up"/>
+				<HighlightTexture file="Interface\Buttons\UI-GroupLoot-Dice-Highlight" alphaMode="ADD"/>
+				<PushedTexture file="Interface\Buttons\UI-GroupLoot-Dice-Down"/>
+			</Button>
+			<Button parentKey="PassButton" inherits="LootRaffle_RollButtonTemplate" id="0">
+				<Anchors>
+					<Anchor point="LEFT" relativeKey="$parent.NeedButton" relativePoint="RIGHT" x="5" y="3"/>
+				</Anchors>
+				 <Scripts>
+					<OnLoad>
+						self.tooltipText=PASS;
+						self.newbieText=LOOT_PASS_NEWBIE;
+					</OnLoad>
+                    <OnClick>
+                        LootRaffle_Roll(self, "PASS")
+                    </OnClick>
+				</Scripts> 
+				<NormalTexture file="Interface\Buttons\UI-GroupLoot-Pass-Up"/>
+				<HighlightTexture file="Interface\Buttons\UI-GroupLoot-Pass-Highlight" alphaMode="ADD"/>
+				<PushedTexture file="Interface\Buttons\UI-GroupLoot-Pass-Down"/>
+			</Button>
+			<Button parentKey="GreedButton" inherits="LootRaffle_RollButtonTemplate" id="2">
+				<Anchors>
+					<Anchor point="TOP" relativeKey="$parent.NeedButton" relativePoint="BOTTOM" x="-2" y="1"/>
+				</Anchors>
+				 <Scripts>
+					<OnLoad>
+						self.tooltipText=GREED;
+						self.newbieText=GREED_NEWBIE;
+					</OnLoad>
+                    <OnClick>
+                        LootRaffle_Roll(self, "GREED")
+                    </OnClick>
+				</Scripts> 
+				<NormalTexture file="Interface\Buttons\UI-GroupLoot-Coin-Up"/>
+				<HighlightTexture file="Interface\Buttons\UI-GroupLoot-Coin-Highlight" alphaMode="ADD"/>
+				<PushedTexture file="Interface\Buttons\UI-GroupLoot-Coin-Down"/>
+			</Button>
+			<Button parentKey="DisenchantButton" inherits="LootRaffle_RollButtonTemplate" id="3">
+				<Anchors>
+					<Anchor point="LEFT" relativeKey="$parent.GreedButton" relativePoint="RIGHT" x="5" y="2"/>
+				</Anchors>
+				 <Scripts>
+					<OnLoad>
+						self.tooltipText=ROLL_DISENCHANT;
+						self.newbieText=ROLL_DISENCHANT_NEWBIE;
+					</OnLoad>
+                    <OnClick>
+                        LootRaffle_Roll(self, "DE")
+                    </OnClick>
+				</Scripts> 
+				<NormalTexture file="Interface\Buttons\UI-GroupLoot-DE-Up"/>
+				<HighlightTexture file="Interface\Buttons\UI-GroupLoot-DE-Highlight" alphaMode="ADD"/>
+				<PushedTexture file="Interface\Buttons\UI-GroupLoot-DE-Down"/>
+			</Button>
+			<StatusBar parentKey="Timer" drawLayer="ARTWORK" minValue="0" maxValue="60000" defaultValue="0">
+				<Size x="190" y="8"/>
+				<Anchors>
+					<Anchor point="BOTTOMLEFT" relativeKey="$parent" relativePoint="BOTTOMLEFT" x="3" y="2"/>
+				</Anchors>
+				<Layers>
+					<Layer level="BACKGROUND">
+						<Texture parentKey="Background" setAllPoints="true">
+							<Color r="0" g="0" b="0"/>
+						</Texture>
+					</Layer>
+				</Layers>
+				 <Scripts>
+					<OnUpdate>
+						LootRaffle_OnRollWindowUpdate(self, elapsed);
+					</OnUpdate>
+				</Scripts> 
+				<BarTexture parentKey="Bar" file="Interface\PaperDollInfoFrame\UI-Character-Skills-Bar" />
+				<BarColor r="1.0" g="1.0" b="0" />
+			</StatusBar>
+		</Frames>
+		<!-- <Scripts>
+			<OnLoad>
+				self:RegisterEvent("CANCEL_LOOT_ROLL");
+			</OnLoad>
+			<OnShow function="GroupLootFrame_OnShow"/>
+			<OnEvent function="GroupLootFrame_OnEvent"/>
+		</Scripts> -->
+	</Frame>
+    
+    <Frame name="LootRaffle_Frame" >
+        <!-- <Size>
+            <AbsDimension x="277" y="67" />
+        </Size>
+        <Anchors>
+            <Anchor point="CENTER" relativeTo="$parent" relativePoint="CENTER" />
+        </Anchors> -->
+        <Frames>            
+             <!-- <Frame name="LootRaffle_RollWindowTemplate" inherits="LootRaffle_RollWindowTemplate" hidden="false">
+                <Anchors>
+                    <Anchor point="CENTER" relativeTo="$parent" relativePoint="CENTER" />
+                </Anchors>
+            </Frame> 
+            <Frame name="LootRaffle_RollWindowTemplate" inherits="LootRaffle_RollWindowTemplate" hidden="false">
+                <Anchors>
+                    <Anchor point="CENTER" relativeTo="$parent" relativePoint="CENTER" y="-77" />
+                </Anchors>
+            </Frame>  -->
+        </Frames>
     </Frame>
 </Ui>
