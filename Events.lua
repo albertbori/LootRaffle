@@ -15,25 +15,34 @@ function SlashCmdList.LootRaffle(msg, editbox)
     elseif msg == "logging off" then
         LootRaffle.LoggingEnabled = false
         print("LootRaffle: Logging disabled.")
+    elseif string.find(msg, "test |") then
+        local name, itemLink = GetItemInfo(msg)
+        if itemLink then
+            local bag, slot = LootRaffle_GetBagPosition(itemLink)
+            LootRaffle_ShowRollWindow(itemLink, "Lootraffle", "Doomhammer")
+        end
     elseif msg == "test" then
         local itemLink = GetContainerItemLink(0, 1)
-        print(itemLink)
-        LootRaffle_ShowRollWindow(itemLink, "Lootraffle", "Doomhammer")
+        if itemLink then
+            LootRaffle_ShowRollWindow(itemLink, "Lootraffle", "Doomhammer")
+        end
     else
         -- try for item
-        local name, link, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(msg)
+        local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(msg)
         if not name then
             print("LootRaffle commands:"); 
             print(" - '[Item Link]]': Starts a raffle");
             print(" - 'logging (on|off)': Toggles logging");
+            return
         end
 
+        local bag, slot = LootRaffle_GetBagPosition(itemLink)
         if not IsInGroup() then
             print("LootRaffle can only be used in a party or raid group.")            
-        elseif not equipSlot or equipSlot == "" then -- not a usable item
-            print("LootRaffle: Invalid item. Must be an equippable item.")
+        elseif not LootRaffle_IsTradeable(bag, slot) then
+            print("LootRaffle: Item is not tradable.")
         else
-            LootRaffle_StartRaffle(link)
+            LootRaffle_StartRaffle(itemLink)
         end
     end
 end
@@ -155,3 +164,5 @@ end
 local f = CreateFrame("frame")
 f:SetScript("OnUpdate", OnUpdate)
 -- LootRaffle_Frame:SetScript("OnUpdate", OnUpdate)
+
+

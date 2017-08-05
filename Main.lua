@@ -218,10 +218,11 @@ function LootRaffle_GetCurrentChannelName()
 end
 
 function LootRaffle_GetBagPosition(itemLink)
-    for bag = 0, NUM_BAG_SLOTS do
-        local slotCount = GetContainerNumSlots(NUM_BAG_SLOTS-bag)
-        for slot = 1, slotCount do
-            if(GetContainerItemLink(bag, slotCount-slot) == itemLink) then
+    for bag = NUM_BAG_SLOTS, 0, -1 do
+        local slotCount = GetContainerNumSlots(bag)
+        for slot = slotCount, 1, -1 do
+            if(GetContainerItemLink(bag, slot) == itemLink) then
+                LootRaffle.Log(itemLink.." found in slot: "..bag..","..slot)
                 return bag, slot
             end
         end
@@ -231,8 +232,13 @@ end
 function LootRaffle_CanUseItem(itemLink)
     local name, link, quality, itemLevel, requiredLevel, itemClass, itemSubClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemLink)
     
-    if itemClass == GetText("Miscellaneous") then -- cloak, trinket, rings are all class independent (or not easily distinguishable)
-        LootRaffle.Log("Player can use "..itemClass.." of type "..itemSubClass)
+    if equipSlot or equipSlot == "" then
+        LootRaffle.Log("Player can use unequippable item: "..itemClass.." of type "..itemSubClass)
+        return true
+    end
+
+    if itemClass == "Miscellaneous" then -- cloak, trinket, rings are all class independent (or not easily distinguishable)
+        LootRaffle.Log("Player can use Miscellaneous item: "..itemClass.." of type "..itemSubClass)
         return true
     end
 
@@ -255,4 +261,43 @@ end
 
 function LootRaffle_GetItemIconBorderAtlas(quality)
     return "loottoast-itemborder-blue"
+end
+
+function LootRaffle_IsTradeable(bag, slot)
+    if not LootRaffle_IsSoulbound(bag, slot) then
+        LootRaffle.Log("Item in slot: "..bag..","..slot.." is tradable.")
+        return true
+    end
+
+    --check if trading this BoP is still allowed
+    --splits the template string on the macro text (%s), checks to see if both halfs match
+    local starts, ends = string.find(BIND_TRADE_TIME_REMAINING, "%%s")
+    local firstHalf = string.sub(BIND_TRADE_TIME_REMAINING, 1, starts-1)
+    local secondHalf = string.sub(BIND_TRADE_TIME_REMAINING, ends+1, string.len(BIND_TRADE_TIME_REMAINING))
+    local isTradeableBoP = LootRaffle_SearchItemTooltip(bag, slot, firstHalf) and LootRaffle_SearchItemTooltip(bag, slot, secondHalf)
+    if isTradeableBoP then
+        LootRaffle.Log("Item in slot: "..bag..","..slot.." is tradable.")
+    else
+        LootRaffle.Log("Item in slot: "..bag..","..slot.." is not tradable.")
+    end
+    return isTradeableBoP
+end
+
+function LootRaffle_IsSoulbound(bag, slot)
+    return LootRaffle_SearchItemTooltip(bag, slot, ITEM_SOULBOUND)
+end
+
+LootRaffle_ParseTooltip = CreateFrame("GameTooltip","LootRaffle_ParseTooltip",nil,"GameTooltipTemplate")
+function LootRaffle_SearchItemTooltip(bag, slot, pattern)
+    LootRaffle_ParseTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+    LootRaffle_ParseTooltip:SetBagItem(bag, slot)
+    LootRaffle_ParseTooltip:Show()
+    for i = 1,LootRaffle_ParseTooltip:NumLines() do
+        local text = _G["GameTooltipTextLeft"..i]:GetText()
+        if text and (text == pattern or string.find(text, pattern)) then
+            return true
+        end
+    end
+    LootRaffle_ParseTooltip:Hide()
+    return false
 end
