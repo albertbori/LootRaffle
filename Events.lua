@@ -71,7 +71,7 @@ local function OnItemLooted(message, sender, language, channelString, target, fl
     if name and quality >= LootRaffle.MinimumQuality and target == UnitName('player') and IsInGroup() and LootRaffle_IsTradeable(bag, slot) and equipSlot and equipSlot ~= "" then
         LootRaffle.Log("LootRaffle detected new loot: ", itemLink)
         LootRaffle_TryPromptForRaffle(itemLink)
-    --end
+    end
 end
 
 local function OnLootWindowClose()
