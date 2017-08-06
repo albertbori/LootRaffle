@@ -19,12 +19,14 @@ function SlashCmdList.LootRaffle(msg, editbox)
         local name, itemLink = GetItemInfo(msg)
         if itemLink then
             local bag, slot = LootRaffle_GetBagPosition(itemLink)
-            LootRaffle_ShowRollWindow(itemLink, UnitName('player'), GetRealmName())
+            local playerName, playerRealmName = UnitFullName('player')
+            LootRaffle_ShowRollWindow(itemLink, playerName, playerRealmName)
         end
     elseif msg == "test" then
         local itemLink = GetContainerItemLink(0, 1)
         if itemLink then
-            LootRaffle_ShowRollWindow(itemLink, UnitName('player'), GetRealmName())
+            local playerName, playerRealmName = UnitFullName('player')
+            LootRaffle_ShowRollWindow(itemLink, playerName, playerRealmName)
         end
     else
         -- try for item
@@ -58,10 +60,14 @@ local function OnLoad(...)
     if addon ~= "LootRaffle" then return end
 
     LootRaffle.Log("Addon loaded.")
+    LootRaffle.LoggingEnabled = LootRaffle_DB.LoggingEnabled or LootRaffle.LoggingEnabled
 end
 
 local function OnUnload(...)
-    LootRaffle_DB = LootRaffle or {}
+    if not LootRaffle_DB then
+        LootRaffle_DB = {}
+    end
+    LootRaffle_DB.LoggingEnabled = LootRaffle.LoggingEnabled
 end
 
 local function OnItemLooted(message, sender, language, channelString, target, flags, unknown, channelNumber, channelName, unknown, counter)
@@ -78,6 +84,8 @@ local function OnLootWindowClose()
 end
 
 local function OnMessageRecieved(prefix, message)
+    if prefix ~= LootRaffle.NEW_RAFFLE_MESSAGE and prefix ~= LootRaffle.ROLL_ON_ITEM_MESSAGE then return end
+    
     LootRaffle.Log("Addon message received: ", prefix, " | ", message)
     local playerName, playerRealmName, itemLink, rollType = string.split("^", message)
     if prefix == LootRaffle.NEW_RAFFLE_MESSAGE and playerName ~= UnitName('player') then
@@ -94,6 +102,16 @@ local function OnMessageRecieved(prefix, message)
         LootRaffle.Log("Roll message recieved from: ", playerName, "-", playerRealmName, " for: ", itemLink)
         LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType)
     end
+end
+
+local function OnWhisperReceived(msg, author, language, status, msgid, unknown, lineId, senderGuid)
+    if LootRaffle.MyRaffledItemsCount == 0 then return end
+
+    local playerName, playerRealmName = string.split("-", author, 2)
+    -- try for item
+    local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(msg)
+    LootRaffle.Log("Discovered whisper roll from ", playerName, playerRealmName, "for item", itemLink)
+    LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, "GREED") -- we don't know what priority people without the addon are rolling. default to greed.
 end
 
 local function OnItemInfoRecieved(itemId)
@@ -132,7 +150,8 @@ local eventHandlers = {
     GET_ITEM_INFO_RECEIVED = OnItemInfoRecieved,
     TRADE_REQUEST_CANCEL = OnTradeReqCanceled,
     TRADE_CLOSED = OnTradeClosed,
-    LOOT_CLOSED = OnLootWindowClose
+    LOOT_CLOSED = OnLootWindowClose,
+    CHAT_MSG_WHISPER = OnWhisperReceived
 }
 
 -- associate event handlers to desired events

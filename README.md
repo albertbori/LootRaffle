@@ -10,14 +10,14 @@ This addon allows players to easily share rare loot during dungeon or raid encou
 - Automatic detection of class proficiencies
 - Automatic trading with the winner
 - Raffle start and end announced in chat
+- Multiple simultaneous roll windows
+- Multiple roll buttons (Need/Greed)
+- Class set-piece filtering
 
 
 ## Planned Features
 
-- Multiple simultaneous roll windows
-- Multiple roll buttons (Need/Greed)
 - Player distance detection and auto-retry trading
-- Class set-piece filtering
 - Relic type filtering
 - End roll as soon as all eligible players roll or pass
 - Configuration settings (roll length, logging, position)
