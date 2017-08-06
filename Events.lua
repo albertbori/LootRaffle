@@ -19,12 +19,12 @@ function SlashCmdList.LootRaffle(msg, editbox)
         local name, itemLink = GetItemInfo(msg)
         if itemLink then
             local bag, slot = LootRaffle_GetBagPosition(itemLink)
-            LootRaffle_ShowRollWindow(itemLink, "Lootraffle", "Doomhammer")
+            LootRaffle_ShowRollWindow(itemLink, UnitName('player'), GetRealmName())
         end
     elseif msg == "test" then
         local itemLink = GetContainerItemLink(0, 1)
         if itemLink then
-            LootRaffle_ShowRollWindow(itemLink, "Lootraffle", "Doomhammer")
+            LootRaffle_ShowRollWindow(itemLink, UnitName('player'), GetRealmName())
         end
     else
         -- try for item
@@ -65,13 +65,16 @@ local function OnUnload(...)
 end
 
 local function OnItemLooted(message, sender, language, channelString, target, flags, unknown, channelNumber, channelName, unknown, counter)
-    local name, link, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(message)
-
+    local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(message)
+    local bag, slot = LootRaffle_GetBagPosition(itemLink)
     -- must be of minimum quality, the owner of the item, in a group of some type, and the item be equippable
-    if name and quality >= LootRaffle.MinimumQuality and target == UnitName('player') and IsInGroup() and equipSlot and equipSlot ~= "" then
-        LootRaffle.Log("LootRaffle detected new loot: ", link)
-        LootRaffle_PromptForRaffle(link)
-    end
+    if name and quality >= LootRaffle.MinimumQuality and target == UnitName('player') and IsInGroup() and LootRaffle_IsTradeable(bag, slot) and equipSlot and equipSlot ~= "" then
+        LootRaffle.Log("LootRaffle detected new loot: ", itemLink)
+        LootRaffle_TryPromptForRaffle(itemLink)
+    --end
+end
+
+local function OnLootWindowClose()
 end
 
 local function OnMessageRecieved(prefix, message)
@@ -128,7 +131,8 @@ local eventHandlers = {
     CHAT_MSG_ADDON = OnMessageRecieved,
     GET_ITEM_INFO_RECEIVED = OnItemInfoRecieved,
     TRADE_REQUEST_CANCEL = OnTradeReqCanceled,
-    TRADE_CLOSED = OnTradeClosed
+    TRADE_CLOSED = OnTradeClosed,
+    LOOT_CLOSED = OnLootWindowClose
 }
 
 -- associate event handlers to desired events
@@ -158,6 +162,7 @@ local function OnUpdate(self, elapsed)
     if elapsedTime >= updateInterval then
         elapsedTime = 0
         LootRaffle_CheckRollStatus()
+        LootRaffle_TryPromptForRaffle()
     end
 end
 

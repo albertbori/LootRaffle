@@ -11,6 +11,9 @@ LootRaffle = {
             print("LootRaffle:", ...)
         end
     end,
+    PossibleRaffleItems = {},
+    PossibleRaffleItemCount = 0,
+    PossibleRafflePromptShown = false,
     MyRaffledItems = {},
     MyRaffledItemsCount = 0,
     CurrentTimeInSeconds = 0,
@@ -26,12 +29,19 @@ StaticPopupDialogs["LOOTRAFFLE_PROMPT"] = {
     button1 = "Yes",
     button2 = "No",
     OnAccept = function(self, data)
-        LootRaffle_StartRaffle(data)
+        LootRaffle.Log("LOOTRAFFLE_PROMPT accepted.")
+        LootRaffle_StartRaffle(data.link)
+        LootRaffle.PossibleRafflePromptShown = false
+    end,
+    OnCancel = function()
+        LootRaffle.Log("LOOTRAFFLE_PROMPT canceled.")
+        LootRaffle.PossibleRafflePromptShown = false
     end,
     timeout = LootRaffle.RaffleLengthInSeconds,
     whileDead = true,
     hideOnEscape = true,
     preferredIndex = 3,  -- avoid some UI taint, see http://www.wowace.com/announcements/how-to-avoid-some-ui-taint/
+    hasItemFrame = true    
 }
 
 
@@ -39,10 +49,31 @@ StaticPopupDialogs["LOOTRAFFLE_PROMPT"] = {
 -- Owner Methods
 -- -------------------------------------------------------------
 
+function LootRaffle_TryPromptForRaffle(itemLink)
+    if itemLink then
+        if LootRaffle.PossibleRafflePromptShown then 
+            LootRaffle.Log("Prompt already shown. Queueing "..itemLink.."...")
+            table.insert(LootRaffle.PossibleRaffleItems, itemLink)
+            LootRaffle.PossibleRaffleItemCount = LootRaffle.PossibleRaffleItemCount + 1
+        else
+            LootRaffle_PromptForRaffle(itemLink)
+        end
+        return 
+    end
+    if not LootRaffle.PossibleRafflePromptShown and LootRaffle.PossibleRaffleItemCount > 0 then
+        local itemLink = LootRaffle.PossibleRaffleItems[1]
+        LootRaffle.Log("Processing next raffle prompt for: "..itemLink.."...")
+        table.remove(LootRaffle.PossibleRaffleItems, 1)
+        LootRaffle.PossibleRaffleItemCount = LootRaffle.PossibleRaffleItemCount - 1
+        LootRaffle_PromptForRaffle(itemLink)
+    end
+end
+
 function LootRaffle_PromptForRaffle(itemLink)
+    LootRaffle.PossibleRafflePromptShown = true
     LootRaffle.Log("LootRaffle_PromptForRaffle(", itemLink, ")")
-    local popup = StaticPopup_Show("LOOTRAFFLE_PROMPT", itemLink)
-    popup.data = itemLink
+    local data = { ["useLinkForItemInfo"] = true, ["link"] = itemLink }
+    local popup = StaticPopup_Show("LOOTRAFFLE_PROMPT", itemLink, nil, data)
 end
 
 function LootRaffle_StartRaffle(itemLink)
