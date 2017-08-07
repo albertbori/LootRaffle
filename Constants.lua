@@ -13,6 +13,13 @@ LootRaffle_ItemQuality = {
 
 LootRaffle_ROLLTYPES = { "NEED", "GREED", "DE", "PASS" }
 
+LootRaffle_ROLLTYPES_STRINGS = {
+    NEED = "Need",
+    GREED = "Greed",
+    DE = "Disenchant/Transmog",
+    PASS = "Pass"
+}
+
 LootRaffle_ClassProficiencies = {}
 LootRaffle_ClassProficiencies["DEATHKNIGHT"] = {
     Armor = { "Plate" },
