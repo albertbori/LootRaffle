@@ -71,12 +71,16 @@ local function OnUnload(...)
 end
 
 local function OnItemLooted(message, sender, language, channelString, target, flags, unknown, channelNumber, channelName, unknown, counter)
+    if target ~= UnitName('player') then return end
+
     local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(message)
-    local bag, slot = LootRaffle_GetBagPosition(itemLink)
-    -- must be of minimum quality, the owner of the item, in a group of some type, and the item be equippable
-    if name and quality >= LootRaffle.MinimumQuality and target == UnitName('player') and IsInGroup() and LootRaffle_IsTradeable(bag, slot) and equipSlot and equipSlot ~= "" then
-        LootRaffle.Log("LootRaffle detected new loot: ", itemLink)
-        LootRaffle_TryPromptForRaffle(itemLink)
+
+    if not name then
+        LootRaffle.Log("Async item info request triggered for message: "..message)
+        table.insert(LootRaffle.PossibleRaffleItemInfoRequests, message)
+        LootRaffle.PossibleRaffleItemInfoRequestCount = LootRaffle.PossibleRaffleItemInfoRequestCount + 1
+    else
+        LootRaffle_TryDetectNewRaffleOpportunity(itemLink, quality)
     end
 end
 
@@ -96,7 +100,8 @@ local function OnMessageRecieved(prefix, message)
         else
             LootRaffle.Log("No item data found for "..itemLink..". Waiting for async result...")
             -- no data, queue for async item info result
-            table.insert(LootRaffle.ItemInfoRequests, { itemLink = itemLink, playerName = playerName, playerRealmName = playerRealmName })
+            table.insert(LootRaffle.IncomingRaffleItemInfoRequests, { itemLink = itemLink, playerName = playerName, playerRealmName = playerRealmName })
+            LootRaffle.IncomingRaffleItemInfoRequestCount = LootRaffle.IncomingRaffleItemInfoRequestCount + 1
         end
     elseif prefix == LootRaffle.ROLL_ON_ITEM_MESSAGE and playerName ~= UnitName('player') then
         LootRaffle.Log("Roll message recieved from: ", playerName, "-", playerRealmName, " for: ", itemLink)
@@ -115,13 +120,31 @@ local function OnWhisperReceived(msg, author, language, status, msgid, unknown, 
 end
 
 local function OnItemInfoRecieved(itemId)
-    local name, link, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemId)
-    LootRaffle.Log("Async item info request completed for "..link)
-    for i,raffle in ipairs(LootRaffle.ItemInfoRequests) do
-        if raffle.itemLink == link then
-            LootRaffle_ShowRollWindow(raffle.itemLink, raffle.playerName, raffle.playerRealmName)
-            table.remove(LootRaffle.ItemInfoRequests, i)
-            break
+
+    -- if there are any async item info requests for incoming raffles, process them and try to show a roll window
+    if LootRaffle.IncomingRaffleItemInfoRequestCount > 0 then
+        local name, link, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemId)
+        LootRaffle.Log("Async item info request completed for "..link)
+        for i,raffle in ipairs(LootRaffle.IncomingRaffleItemInfoRequests) do
+            if raffle.itemLink == link then
+                LootRaffle_ShowRollWindow(raffle.itemLink, raffle.playerName, raffle.playerRealmName)
+                table.remove(LootRaffle.IncomingRaffleItemInfoRequests, i)
+                LootRaffle.IncomingRaffleItemInfoRequestCount = LootRaffle.IncomingRaffleItemInfoRequestCount - 1
+                return
+            end
+        end
+    end
+
+    -- if there are any async item info requests for possible raffle prompts, process them and try to show the raffle prompt
+    if LootRaffle.PossibleRaffleItemInfoRequestCount > 0 then
+        for i,message in ipairs(LootRaffle.PossibleRaffleItemInfoRequests) do
+            local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(message)
+            if name then
+                LootRaffle.PossibleRaffleItemInfoRequestCount = LootRaffle.PossibleRaffleItemInfoRequestCount - 1
+                table.remove(LootRaffle.PossibleRaffleItemInfoRequests, i) 
+                LootRaffle_TryDetectNewRaffleOpportunity(itemLink, quality)
+                return
+            end
         end
     end
 end

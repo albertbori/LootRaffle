@@ -14,10 +14,13 @@ LootRaffle = {
     PossibleRaffleItems = {},
     PossibleRaffleItemCount = 0,
     PossibleRafflePromptShown = false,
+    PossibleRaffleItemInfoRequests = {},
+    PossibleRaffleItemInfoRequestCount = 0,
     MyRaffledItems = {},
     MyRaffledItemsCount = 0,
     CurrentTimeInSeconds = 0,
-    ItemInfoRequests = {},
+    IncomingRaffleItemInfoRequests = {},
+    IncomingRaffleItemInfoRequestCount = 0,
     PendingTrades = {}, --unused (planned)
     RollWindows = {},
     RollWindowsCount = 0
@@ -48,6 +51,15 @@ StaticPopupDialogs["LOOTRAFFLE_PROMPT"] = {
 -- -------------------------------------------------------------
 -- Owner Methods
 -- -------------------------------------------------------------
+
+function LootRaffle_TryDetectNewRaffleOpportunity(itemLink, quality)
+    local bag, slot = LootRaffle_GetBagPosition(itemLink)
+    -- must be of minimum quality, the owner of the item, in a group of some type, and the item be tradable
+    if quality >= LootRaffle.MinimumQuality and IsInGroup() and LootRaffle_IsTradeable(bag, slot) then    
+        LootRaffle.Log("LootRaffle detected new loot: ", itemLink)
+        LootRaffle_TryPromptForRaffle(itemLink)
+    end
+end
 
 function LootRaffle_TryPromptForRaffle(itemLink)
     if itemLink then
@@ -125,7 +137,7 @@ function LootRaffle_CheckRollStatus()
     if LootRaffle.MyRaffledItemsCount == 0 then
         return
     end
-    LootRaffle.Log("Checking roll timeout status...")
+    -- LootRaffle.Log("Checking roll timeout status...")
     for i, raffle in ipairs(LootRaffle.MyRaffledItems) do
         local secondsLapsed = LootRaffle.CurrentTimeInSeconds - raffle.timeInSeconds
         if secondsLapsed > LootRaffle.RaffleLengthInSeconds then
@@ -294,8 +306,13 @@ function LootRaffle_UnitCanUseItem(unitName, itemLink)
         return true
     end
 
-    if itemClass == "Miscellaneous" then -- cloak, trinket, rings are all class independent (or not easily distinguishable)
+    if itemSubClass == "Miscellaneous" then -- trinket, rings are all class independent (or not easily distinguishable)
         LootRaffle.Log("Player can use Miscellaneous item: "..itemClass.." of type "..itemSubClass)
+        return true
+    end
+
+    if equipSlot == "INVTYPE_CLOAK" then -- cloaks are class independant
+        LootRaffle.Log("Player can use cloak: "..itemClass.." of type "..itemSubClass)
         return true
     end
 
@@ -334,8 +351,8 @@ function LootRaffle_IsTradeable(bag, slot)
     --check if trading this BoP is still allowed
     --splits the template string on the macro text (%s), checks to see if both halfs match
     local starts, ends = string.find(BIND_TRADE_TIME_REMAINING, "%%s")
-    local firstHalf = string.sub(BIND_TRADE_TIME_REMAINING, 1, starts-1)
-    local secondHalf = string.sub(BIND_TRADE_TIME_REMAINING, ends+1, string.len(BIND_TRADE_TIME_REMAINING))
+    local firstHalf = LootRaffle_EscapePatternCharacters(string.sub(BIND_TRADE_TIME_REMAINING, 1, starts-1))
+    local secondHalf = LootRaffle_EscapePatternCharacters(string.sub(BIND_TRADE_TIME_REMAINING, ends+1, string.len(BIND_TRADE_TIME_REMAINING)))
     local isTradeableBoP = LootRaffle_SearchOwnedItemTooltip(bag, slot, firstHalf) and LootRaffle_SearchOwnedItemTooltip(bag, slot, secondHalf)
     if isTradeableBoP then
         LootRaffle.Log("Item in slot: "..bag..","..slot.." is tradable.")
@@ -351,7 +368,7 @@ end
 
 function LootRaffle_ItemCanBeUsedByClass(itemLink, class)
     local starts, ends = string.find(BIND_TRADE_TIME_REMAINING, "%%s")
-    local firstHalf = string.sub(BIND_TRADE_TIME_REMAINING, 1, starts-1)
+    local firstHalf = LootRaffle_EscapePatternCharacters(string.sub(BIND_TRADE_TIME_REMAINING, 1, starts-1))
     if LootRaffle_SearchItemTooltip(itemLink, firstHalf) and not LootRaffle_SearchItemTooltip(itemLink, firstHalf..class) then
         return false
     end
@@ -385,4 +402,8 @@ function LootRaffle_SearchItemTooltip(itemLink, pattern)
     end
     LootRaffle_ParseTooltip:Hide()
     return false
+end
+
+function LootRaffle_EscapePatternCharacters(text)
+    return string.gsub(text, "[%.%%]", "%%%1")
 end
