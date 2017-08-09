@@ -80,9 +80,9 @@
 					<OnLoad>
 						self.hasItem = 1;
 					</OnLoad>
-					<!-- <OnEnter>
+					<OnEnter>
 						GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
-						GameTooltip:SetLootRollItem(self:GetParent().rollID);
+						GameTooltip:SetHyperlink(self:GetParent().data.itemLink);
 						CursorUpdate(self);
 					</OnEnter>
 					<OnLeave>
@@ -92,12 +92,12 @@
 					<OnUpdate>
 						if ( GameTooltip:IsOwned(self) ) then
 							GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
-							GameTooltip:SetLootRollItem(self:GetParent().rollID);
+							GameTooltip:SetHyperlink(self:GetParent().data.itemLink);
 						end
 						CursorOnUpdate(self);
 					</OnUpdate>
-					<OnClick>
-						HandleModifiedItemClick(GetLootRollItemLink(self:GetParent().rollID));
+					<!-- <OnClick>
+						HandleModifiedItemClick(self:data.itemLink);
 					</OnClick> -->
 				</Scripts>
 			</Button>
