@@ -70,21 +70,60 @@ local function OnUnload(...)
     LootRaffle_DB.LoggingEnabled = LootRaffle.LoggingEnabled
 end
 
+local LootedItems = {}
+local LootedItemsCount = 0
 local function OnItemLooted(message, sender, language, channelString, target, flags, unknown, channelNumber, channelName, unknown, counter)
     if target ~= UnitName('player') then return end
 
-    local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(message)
+    LootRaffle.Log("Queuing looted item:", message)
+    table.insert(LootedItems, { message = message, tries = 0 })
+    LootedItemsCount = LootedItemsCount + 1
+end
 
-    if not name then
-        LootRaffle.Log("Async item info request triggered for message: "..message)
-        table.insert(LootRaffle.PossibleRaffleItemInfoRequests, message)
-        LootRaffle.PossibleRaffleItemInfoRequestCount = LootRaffle.PossibleRaffleItemInfoRequestCount + 1
-    else
-        LootRaffle_TryDetectNewRaffleOpportunity(itemLink, quality)
-    end
+local isLootWindowOpen = false
+local function OnLootWindowOpen()
+    isLootWindowOpen = true
+    LootRaffle.Log("Loot window opened.")
 end
 
 local function OnLootWindowClose()
+    if isLootWindowOpen == true then
+        isLootWindowOpen = false
+        LootRaffle.Log("Loot window closed.")
+    end
+end
+
+local function ProcessLootedItems()
+    -- attempt to find the item info and slot info of each looted item
+    if not isLootWindowOpen and LootedItemsCount > 0 then
+        LootRaffle.Log("Processing", LootedItemsCount, "looted items...")
+        for i = LootedItemsCount, 1, -1 do
+            local itemData = LootedItems[i]
+            -- print("message:", itemData.message, "| tries:", itemData.tries)
+            local name, link, quality, itemLevel, requiredLevel, itemClass, itemSubClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemData.message)
+            if itemData.tries >= 5 then --max 5 retries to find the item data
+                LootRaffle.Log("Max loot processing retries for item:", link)
+                table.remove(LootedItems, i)
+                LootedItemsCount = LootedItemsCount - 1
+            else
+                if name then
+                    local bag, slot = LootRaffle_GetBagPosition(link)
+                    if bag and slot then
+                        -- LootRaffle.Log("Looted item data requests fnished for", link)
+                        LootRaffle_TryDetectNewRaffleOpportunity(link, quality, bag, slot)
+                        table.remove(LootedItems, i)
+                        LootedItemsCount = LootedItemsCount - 1
+                    else
+                        itemData.tries = itemData.tries + 1
+                        LootRaffle.Log("Bag and slot not yet available for:", link)
+                    end
+                else
+                    itemData.tries = itemData.tries + 1
+                    LootRaffle.Log("Item info not yet available for: ", itemData.message)
+                end
+            end
+        end
+    end
 end
 
 local function OnMessageRecieved(prefix, message)
@@ -116,34 +155,20 @@ local function OnWhisperReceived(msg, author, language, status, msgid, unknown, 
     -- try for item
     local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(msg)
     LootRaffle.Log("Discovered whisper roll from ", playerName, playerRealmName, "for item", itemLink)
-    LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, "GREED") -- we don't know what priority people without the addon are rolling. default to greed.
+    LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, "GREED", true) -- we don't know what priority people without the addon are rolling. default to greed.
 end
 
 local function OnItemInfoRecieved(itemId)
-
     -- if there are any async item info requests for incoming raffles, process them and try to show a roll window
     if LootRaffle.IncomingRaffleItemInfoRequestCount > 0 then
-        local name, link, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemId)
-        LootRaffle.Log("Async item info request completed for "..link)
+        local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemId)
+        LootRaffle.Log("Async item info request completed for incoming raffle"..itemLink)
         for i,raffle in ipairs(LootRaffle.IncomingRaffleItemInfoRequests) do
-            if raffle.itemLink == link then
-                LootRaffle_ShowRollWindow(raffle.itemLink, raffle.playerName, raffle.playerRealmName)
+            if raffle.itemLink == itemLink or string.find(raffle.itemLink, LootRaffle_EscapePatternCharacters(name)) then
                 table.remove(LootRaffle.IncomingRaffleItemInfoRequests, i)
                 LootRaffle.IncomingRaffleItemInfoRequestCount = LootRaffle.IncomingRaffleItemInfoRequestCount - 1
-                return
-            end
-        end
-    end
-
-    -- if there are any async item info requests for possible raffle prompts, process them and try to show the raffle prompt
-    if LootRaffle.PossibleRaffleItemInfoRequestCount > 0 then
-        for i,message in ipairs(LootRaffle.PossibleRaffleItemInfoRequests) do
-            local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(message)
-            if name then
-                LootRaffle.PossibleRaffleItemInfoRequestCount = LootRaffle.PossibleRaffleItemInfoRequestCount - 1
-                table.remove(LootRaffle.PossibleRaffleItemInfoRequests, i) 
-                LootRaffle_TryDetectNewRaffleOpportunity(itemLink, quality)
-                return
+                LootRaffle_ShowRollWindow(raffle.itemLink, raffle.playerName, raffle.playerRealmName)
+                break
             end
         end
     end
@@ -173,6 +198,7 @@ local eventHandlers = {
     GET_ITEM_INFO_RECEIVED = OnItemInfoRecieved,
     TRADE_REQUEST_CANCEL = OnTradeReqCanceled,
     TRADE_CLOSED = OnTradeClosed,
+    LOOT_OPENED = OnLootWindowOpen,
     LOOT_CLOSED = OnLootWindowClose,
     CHAT_MSG_WHISPER = OnWhisperReceived
 }
@@ -204,7 +230,10 @@ local function OnUpdate(self, elapsed)
     if elapsedTime >= updateInterval then
         elapsedTime = 0
         LootRaffle_CheckRollStatus()
-        LootRaffle_TryPromptForRaffle()
+        if not InCombatLockdown() then
+            LootRaffle_TryPromptForRaffle()
+            ProcessLootedItems()
+        end
     end
 end
 
