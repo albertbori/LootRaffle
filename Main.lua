@@ -3,9 +3,10 @@ local _, LootRaffle_Local=...
 LootRaffle = {
     MinimumQuality = LootRaffle_ItemQuality.Rare,
     RaffleLengthInSeconds = 30,
+    LoggingEnabled = false,
+    AutoDetectLootedItems = true,
     NEW_RAFFLE_MESSAGE = "LR_START",
     ROLL_ON_ITEM_MESSAGE = "LR_ROLL",
-    LoggingEnabled = false,
     Log = function (...)
         if LootRaffle.LoggingEnabled then
             print("LootRaffle:", ...)
@@ -19,7 +20,7 @@ LootRaffle = {
     CurrentTimeInSeconds = 0,
     IncomingRaffleItemInfoRequests = {},
     IncomingRaffleItemInfoRequestCount = 0,
-    PendingTrades = {}, --unused (planned)
+    PendingTrades = {},
     RollWindows = {},
     RollWindowsCount = 0
 }
@@ -91,7 +92,14 @@ end
 
 function LootRaffle_StartRaffle(itemLink)
     LootRaffle.Log("LootRaffle_StartRaffle(", itemLink, ")")
-    local raffle = { itemLink = itemLink, timeInSeconds = LootRaffle.CurrentTimeInSeconds, Rollers = {}, RollerCounts = {} }
+    local raffle = { 
+        itemLink = itemLink, 
+        timeInSeconds = LootRaffle.CurrentTimeInSeconds, 
+        Rollers = {}, 
+        RollerCounts = {}, 
+        ResponderCount = 0, 
+        GroupSize = LootRaffle_GetGroupSize() 
+     }
     for i,rollType in ipairs(LootRaffle_ROLLTYPES) do
         raffle.RollerCounts[rollType] = 0
         raffle.Rollers[rollType] = {}
@@ -100,7 +108,7 @@ function LootRaffle_StartRaffle(itemLink)
     LootRaffle.MyRaffledItemsCount = LootRaffle.MyRaffledItemsCount + 1
     local playerName, playerRealmName = UnitFullName('player')
     SendAddonMessage(LootRaffle.NEW_RAFFLE_MESSAGE, strjoin("^", playerName, playerRealmName or string.gsub(GetRealmName(), "%s+", ""), itemLink), LootRaffle_GetCurrentChannelName())
-    SendChatMessage("I'm giving away "..itemLink.." using the LootRaffle addon. (Download it on Curse. If you don't have the addon, whisper me with the item link if you're interested.)", LootRaffle_GetCurrentChannelName())
+    SendChatMessage("[LootRaffle] I'm giving away "..itemLink..". (Download LootRaffle from the Twitch app. If you don't have the addon, whisper me with the item link if you're interested.)", LootRaffle_GetCurrentChannelName())
 end
 
 function LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType, fromWhisper)
@@ -121,10 +129,10 @@ function LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType,
     end
 
     -- Make sure roller can use item (in case of whisper or hack)
-    if not LootRaffle_UnitCanUseItem(rollerUnitName, itemLink) then
+    if not LootRaffle_UnitCanUseItem(rollerUnitName, itemLink) and rollType ~= "PASS" then
         LootRaffle.Log("Discarding roll from", playerName, playerRealmName, "for item", itemLink, ". They cannot use the item.")
         if fromWhisper then
-            SendChatMessage("You cannot use "..itemLink..". Your roll has been discarded.", "WHISPER", nil, LootRaffle_GetWhisperName(playerName, playerRealmName))
+            SendChatMessage("[LootRaffle] You cannot use "..itemLink..". Your roll has been discarded.", "WHISPER", nil, LootRaffle_GetWhisperName(playerName, playerRealmName))
         end
         return
     end
@@ -142,10 +150,11 @@ function LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType,
             LootRaffle.Log("Registering", rollType, "roll from", playerName, playerRealmName, "for item", itemLink)
             table.insert(raffle.Rollers[rollType], { playerName = playerName, realmName = playerRealmName })
             raffle.RollerCounts[rollType] = raffle.RollerCounts[rollType] + 1
+            raffle.ResponderCount = raffle.ResponderCount + 1
 
             -- send confirmation message to those who rolled via whisper
             if fromWhisper then
-                SendChatMessage("Your request to roll on "..itemLink.." has been received.", "WHISPER", nil, LootRaffle_GetWhisperName(playerName, playerRealmName))
+                SendChatMessage("[LootRaffle] Your request to roll on "..itemLink.." has been received.", "WHISPER", nil, LootRaffle_GetWhisperName(playerName, playerRealmName))
             end
             break
         end
@@ -153,15 +162,18 @@ function LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType,
 end
 
 function LootRaffle_CheckRollStatus()
-    if LootRaffle.MyRaffledItemsCount == 0 then
-        return
-    end
+    if LootRaffle.MyRaffledItemsCount == 0 then return end
     -- LootRaffle.Log("Checking roll timeout status...")
-    for i, raffle in ipairs(LootRaffle.MyRaffledItems) do
+    for i=#LootRaffle.MyRaffledItems,1,-1 do
+        local raffle = LootRaffle.MyRaffledItems[i]
         local secondsLapsed = LootRaffle.CurrentTimeInSeconds - raffle.timeInSeconds
         if secondsLapsed > LootRaffle.RaffleLengthInSeconds then
+            LootRaffle.Log("Raffle time limit reached. Ending raffle...")
             LootRaffle_EndRaffle(raffle)
-            break
+        end
+        if raffle.ResponderCount >= raffle.GroupSize then
+            LootRaffle.Log("All responders responded. Ending raffle...")
+            LootRaffle_EndRaffle(raffle)
         end
     end
 end
@@ -188,28 +200,44 @@ end
 
 function LootRaffle_AwardItem(itemLink, playerName, playerRealmName)
     LootRaffle.Log("LootRaffle_AwardItem(", itemLink, ", ", playerName, ", ", playerRealmName, ")")
-
-    local winnerUnitName = LootRaffle_GetUnitNameFromPlayerName(playerName, playerRealmName)
-
-    if not winnerUnitName then
-        print("LootRaffle: Couldn't find player to trade with. The player is not in your group or raid. You must trade manually.")
-        return
-    end
-
-    if UnitIsDeadOrGhost(winnerUnitName) then
-        print("LootRaffle: Couldn't find player to trade with. The player is dead. You must trade manually.")
-        return
-    end
-
-    InitiateTrade(winnerUnitName)
-
-    local bag, slot = LootRaffle_GetBagPosition(itemLink)
-    if bag and slot then
-        PickupContainerItem(bag, slot)
-        AcceptTrade() -- This doesn't seem to work? http://wowprogramming.com/docs/api/AcceptTrade
-    end
+    table.insert(LootRaffle.PendingTrades, { itemLink = itemLink, playerName = playerName, playerRealmName = playerRealmName, tryCount = 0 })
+    print("[LootRaffle] Move close to "..playerName.."-"..playerRealmName.." for auto-trading.")
+    SendChatMessage("[LootRaffle] Move close to me so I can trade you "..itemLink, "WHISPER", nil, LootRaffle_GetWhisperName(playerName, playerRealmName))
 end
 
+function LootRaffle_TryTradeWinners()
+    if #LootRaffle.PendingTrades == 0 then return end
+
+    local pendingTrade = LootRaffle.PendingTrades[1]
+    local winnerUnitName = LootRaffle_GetUnitNameFromPlayerName(pendingTrade.playerName, pendingTrade.playerRealmName)
+    local bag, slot = LootRaffle_GetBagPosition(pendingTrade.itemLink)
+    local canTrade = true
+    if not winnerUnitName or not bag or not slot then
+        canTrade = false
+        LootRaffle.Log("Trade attempt failed, data not available for", pendingTrade.itemLink)
+    elseif UnitIsDeadOrGhost(winnerUnitName) then -- 10 yards
+        canTrade = false
+        LootRaffle.Log("Trade failed, winner is dead")
+    elseif UnitDistanceSquared(winnerUnitName) ^ 0.5 > 10 then
+        canTrade = false
+        LootRaffle.Log("Trade failed, winner is out of range:", UnitDistanceSquared(winnerUnitName) ^ 0.5)
+    end
+
+    if not canTrade then
+        pendingTrade.tryCount = pendingTrade.tryCount + 1
+        if pendingTrade.tryCount >= 30 then
+            table.remove(LootRaffle.PendingTrades, 1)
+            print("[LootRaffle] Unable to auto-trade "..pendingTrade.itemLink.." with "..pendingTrade.playerName.."-"..pendingTrade.playerRealmName..". You will have to trade manually.")
+        end
+        return
+    end
+
+    table.remove(LootRaffle.PendingTrades, 1)
+
+    LootRaffle.Log("Attempting to trade with", winnerUnitName)
+    InitiateTrade(winnerUnitName)
+    PickupContainerItem(bag, slot)
+end
 
 -- -------------------------------------------------------------
 -- Recipient Methods
@@ -217,6 +245,7 @@ end
 
 function LootRaffle_ShowRollWindow(itemLink, playerName, playerRealmName)
     if not LootRaffle_UnitCanUseItem("player", itemLink) then
+        SendAddonMessage(LootRaffle.ROLL_ON_ITEM_MESSAGE, strjoin("^", playerName, playerRealmName or string.gsub(GetRealmName(), "%s+", ""), itemLink, "PASS"), LootRaffle_GetCurrentChannelName())
         return
     end
     LootRaffle.Log("Showing roll window...")
@@ -272,7 +301,9 @@ end
 -- -------------------------------------------------------------
 
 function LootRaffle_GetCurrentChannelName()
-    if IsInRaid() then
+    if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
+        return "INSTANCE_CHAT"
+    elseif IsInRaid() then
         return "RAID"
     elseif IsInGroup() then
         return "PARTY"
@@ -306,7 +337,22 @@ function LootRaffle_GetUnitNameFromPlayerName(playerName, playerRealmName)
     return nil
 end
 
+function LootRaffle_GetGroupSize()
+    if IsInRaid() then
+        return GetNumGroupMembers()
+    else
+        local partyRoster = GetHomePartyInfo()
+        local partySize = 0
+        for i, name in ipairs(partyRoster) do
+            partySize = partySize + 1
+        end
+        return partySize
+    end
+end
+
 function LootRaffle_GetBagPosition(itemLink)
+    LootRaffle.Log("Searching for", itemLink, "in bags...")
+    local variantFragmentPattern = LootRaffle_EscapePatternCharacters(select(1, GetItemInfo(itemLink))).." of "
     for bag = NUM_BAG_SLOTS, 0, -1 do
         local slotCount = GetContainerNumSlots(bag)
         for slot = slotCount, 1, -1 do
@@ -314,16 +360,13 @@ function LootRaffle_GetBagPosition(itemLink)
             if containerItemLink == itemLink then
                 LootRaffle.Log(itemLink.." found in slot: "..bag..","..slot)
                 return bag, slot
-            elseif containerItemLink then -- if the exact link match fails, check for variant.
-                local variantFragment = LootRaffle_EscapePatternCharacters(select(1, GetItemInfo(itemLink))).." of "
-                LootRaffle.Log("Searching for item variant:", variantFragment, "in", string.gsub(containerItemLink, "|", "||"))
-                if string.find(containerItemLink, variantFragment) then
-                    LootRaffle.Log("Green item variant for "..itemLink.." found in slot: "..bag..","..slot)
-                    return bag, slot
-                end
+            elseif containerItemLink and string.find(containerItemLink, variantFragmentPattern) then -- check for variant. "Bracers of Intelletct", etc.
+                LootRaffle.Log("Green item variant for "..itemLink.." found in slot: "..bag..","..slot)
+                return bag, slot
             end
         end
     end
+    LootRaffle.Log(itemLink, "not found in bags.")
 end
 
 function LootRaffle_UnitCanUseItem(unitName, itemLink)
@@ -367,7 +410,7 @@ end
 
 function LootRaffle_IsTradeable(bag, slot)
     if not LootRaffle_IsSoulbound(bag, slot) then
-        LootRaffle.Log("Item in slot: ", bag, ",", slot, " is tradable.")
+        LootRaffle.Log("Item in slot: ", bag, ",", slot, " is tradable. (Not Soulbound)")
         return true
     end
 
@@ -378,15 +421,15 @@ function LootRaffle_IsTradeable(bag, slot)
     local secondHalf = LootRaffle_EscapePatternCharacters(string.sub(BIND_TRADE_TIME_REMAINING, ends+1, string.len(BIND_TRADE_TIME_REMAINING)))
     local isTradeableBoP = LootRaffle_SearchBagItemTooltip(bag, slot, firstHalf) and LootRaffle_SearchBagItemTooltip(bag, slot, secondHalf)
     if isTradeableBoP then
-        LootRaffle.Log("Item in slot: ", bag, ",", slot, " is tradable.")
+        LootRaffle.Log("Item in slot: ", bag, ",", slot, " is a temporarily tradable soulbound item.")
     else
-        LootRaffle.Log("Item in slot: ", bag, ",", slot, " is not tradable.")
+        LootRaffle.Log("Item in slot: ", bag, ",", slot, " is not tradable (Soulbound).")
     end
     return isTradeableBoP
 end
 
 function LootRaffle_IsSoulbound(bag, slot)
-    return LootRaffle_SearchBagItemTooltip(bag, slot, ITEM_SOULBOUND)
+    return LootRaffle_SearchBagItemTooltip(bag, slot, ITEM_SOULBOUND) or LootRaffle_SearchBagItemTooltip(bag, slot, ITEM_BIND_ON_PICKUP)
 end
 
 function LootRaffle_ItemCanBeUsedByClass(itemLink, class)
@@ -400,24 +443,26 @@ end
 
 LootRaffle_ParseItemTooltip = CreateFrame("GameTooltip","LootRaffle_ParseItemTooltip",nil,"GameTooltipTemplate")
 function LootRaffle_SearchBagItemTooltip(bag, slot, pattern)
-    --LootRaffle.Log("Searching for", pattern, "in item bag/slot", bag, "|", slot, "tooltip.")
+    --LootRaffle.Log("Searching for", pattern, "in item tooltip for bag/slot:", bag, "/", slot)
+    LootRaffle_ParseItemTooltip:SetOwner(UIParent, "ANCHOR_NONE")
     LootRaffle_ParseItemTooltip:SetBagItem(bag, slot)
     return LootRaffle_SearchTooltip(pattern)
 end
 
 function LootRaffle_SearchItemLinkTooltip(itemLink, pattern)
-    --LootRaffle.Log("Searching for", pattern, "in item tooltip", itemLink, "tooltip.")
+    --LootRaffle.Log("Searching for", pattern, "in item tooltip for itemLink:", itemLink)
+    LootRaffle_ParseItemTooltip:SetOwner(UIParent, "ANCHOR_NONE")
     LootRaffle_ParseItemTooltip:SetHyperlink(itemLink)    
     return LootRaffle_SearchTooltip(pattern)
 end
 
 function LootRaffle_SearchTooltip(pattern)
-    LootRaffle_ParseItemTooltip:SetOwner(UIParent, "ANCHOR_NONE")
     LootRaffle_ParseItemTooltip:Show()
     for i = 1,LootRaffle_ParseItemTooltip:NumLines() do
         local tooltipLine = _G["GameTooltipTextLeft"..i]
         if tooltipLine then
             local text = tooltipLine:GetText()
+            print(text)
             if text and (text == pattern or string.find(text, pattern)) then
                 return true
             end

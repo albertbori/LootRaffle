@@ -11,20 +11,20 @@ function SlashCmdList.LootRaffle(msg, editbox)
         -- LootRaffle_ResetSizeAndPosition();
     elseif msg == "logging on" then
         LootRaffle.LoggingEnabled = true
-        print("LootRaffle: Logging enabled")
+        print("[LootRaffle] Logging enabled")
     elseif msg == "logging off" then
         LootRaffle.LoggingEnabled = false
-        print("LootRaffle: Logging disabled.")
-    elseif string.find(msg, "test |") then
-        local name, itemLink = GetItemInfo(msg)
+        print("[LootRaffle] Logging disabled.")
+    elseif msg == "auto-detect on" then
+        LootRaffle.AutoDetectLootedItems = true
+        print("[LootRaffle] Automatic raffle prompt enabled.")
+    elseif msg == "auto-detect off" then
+        LootRaffle.AutoDetectLootedItems = false
+        print("[LootRaffle] Automatic raffle prompt disabled.")
+    elseif string.find(msg, "test") then
+        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
         if itemLink then
             local bag, slot = LootRaffle_GetBagPosition(itemLink)
-            local playerName, playerRealmName = UnitFullName('player')
-            LootRaffle_ShowRollWindow(itemLink, playerName, playerRealmName)
-        end
-    elseif msg == "test" then
-        local itemLink = GetContainerItemLink(0, 1)
-        if itemLink then
             local playerName, playerRealmName = UnitFullName('player')
             LootRaffle_ShowRollWindow(itemLink, playerName, playerRealmName)
         end
@@ -35,6 +35,7 @@ function SlashCmdList.LootRaffle(msg, editbox)
             print("LootRaffle commands:"); 
             print(" - '[Item Link]]': Starts a raffle");
             print(" - 'logging (on|off)': Toggles logging");
+            print(" - 'auto-detect (on|off)': Toggles Automatic raffle prompt when you loot a tradable item.");
             return
         end
 
@@ -42,7 +43,7 @@ function SlashCmdList.LootRaffle(msg, editbox)
         if not IsInGroup() then
             print("LootRaffle can only be used in a party or raid group.")            
         elseif not LootRaffle_IsTradeable(bag, slot) then
-            print("LootRaffle: Item is not tradable.")
+            print("[LootRaffle] Item is not tradable.")
         else
             LootRaffle_StartRaffle(itemLink)
         end
@@ -61,6 +62,7 @@ local function OnLoad(...)
 
     LootRaffle.Log("Addon loaded.")
     LootRaffle.LoggingEnabled = LootRaffle_DB.LoggingEnabled or LootRaffle.LoggingEnabled
+    LootRaffle.AutoDetectLootedItems = LootRaffle_DB.AutoDetectLootedItems or LootRaffle.AutoDetectLootedItems
 end
 
 local function OnUnload(...)
@@ -68,12 +70,13 @@ local function OnUnload(...)
         LootRaffle_DB = {}
     end
     LootRaffle_DB.LoggingEnabled = LootRaffle.LoggingEnabled
+    LootRaffle_DB.AutoDetectLootedItems = LootRaffle.AutoDetectLootedItems
 end
 
 local LootedItems = {}
 local LootedItemsCount = 0
 local function OnItemLooted(message, sender, language, channelString, target, flags, unknown, channelNumber, channelName, unknown, counter)
-    if target ~= UnitName('player') then return end
+    if target ~= UnitName('player') or not IsInGroup() then return end
 
     LootRaffle.Log("Queuing looted item:", message)
     table.insert(LootedItems, { message = message, tries = 0 })
@@ -174,11 +177,13 @@ local function OnItemInfoRecieved(itemId)
     end
 end
 
-local function OnTradeReqCanceled(...)
-    -- print("OnTradeReqCanceled", ...)
+local function OnTradeOpened(...)
+    TradeWindowIsOpen = true
+    -- print("OnTradeOpened", ...)
 end
 
 local function OnTradeClosed(...)
+    TradeWindowIsOpen = false
     -- print("OnTradeClosed", ...)
 end
 
@@ -196,7 +201,7 @@ local eventHandlers = {
     CHAT_MSG_LOOT = OnItemLooted,
     CHAT_MSG_ADDON = OnMessageRecieved,
     GET_ITEM_INFO_RECEIVED = OnItemInfoRecieved,
-    TRADE_REQUEST_CANCEL = OnTradeReqCanceled,
+    TRADE_OPENED = OnTradeOpened,
     TRADE_CLOSED = OnTradeClosed,
     LOOT_OPENED = OnLootWindowOpen,
     LOOT_CLOSED = OnLootWindowClose,
@@ -233,6 +238,9 @@ local function OnUpdate(self, elapsed)
         if not InCombatLockdown() then
             LootRaffle_TryPromptForRaffle()
             ProcessLootedItems()
+            if not TradeWindowIsOpen then
+                LootRaffle_TryTradeWinners()
+            end
         end
     end
 end
