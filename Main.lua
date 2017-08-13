@@ -2,7 +2,7 @@ local _, LootRaffle_Local=...
 
 LootRaffle = {
     MinimumQuality = LootRaffle_ItemQuality.Rare,
-    RaffleLengthInSeconds = 30,
+    RaffleLengthInSeconds = 60,
     LoggingEnabled = false,
     AutoDetectLootedItems = true,
     NEW_RAFFLE_MESSAGE = "LR_START",
