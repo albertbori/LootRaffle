@@ -108,7 +108,7 @@ function LootRaffle_StartRaffle(itemLink)
     LootRaffle.MyRaffledItemsCount = LootRaffle.MyRaffledItemsCount + 1
     local playerName, playerRealmName = UnitFullName('player')
     SendAddonMessage(LootRaffle.NEW_RAFFLE_MESSAGE, strjoin("^", playerName, playerRealmName or string.gsub(GetRealmName(), "%s+", ""), itemLink), LootRaffle_GetCurrentChannelName())
-    SendChatMessage("[LootRaffle] I'm giving away "..itemLink..". (Download LootRaffle from the Twitch app. If you don't have the addon, whisper me with the item link if you're interested.)", LootRaffle_GetCurrentChannelName())
+    SendChatMessage("[LootRaffle] whisper me if you want "..itemLink.." (or roll using the LootRaffle addon).", LootRaffle_GetCurrentChannelName())
 end
 
 function LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType, fromWhisper)
@@ -202,7 +202,7 @@ function LootRaffle_AwardItem(itemLink, playerName, playerRealmName)
     LootRaffle.Log("LootRaffle_AwardItem(", itemLink, ", ", playerName, ", ", playerRealmName, ")")
     table.insert(LootRaffle.PendingTrades, { itemLink = itemLink, playerName = playerName, playerRealmName = playerRealmName, tryCount = 0 })
     print("[LootRaffle] Move close to "..playerName.."-"..playerRealmName.." for auto-trading.")
-    SendChatMessage("[LootRaffle] Move close to me so I can trade you "..itemLink, "WHISPER", nil, LootRaffle_GetWhisperName(playerName, playerRealmName))
+    SendChatMessage("[LootRaffle] You won!! Move close to me so I can give you "..itemLink..".", "WHISPER", nil, LootRaffle_GetWhisperName(playerName, playerRealmName))
 end
 
 function LootRaffle_TryTradeWinners()
