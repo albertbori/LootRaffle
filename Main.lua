@@ -429,7 +429,7 @@ function LootRaffle_IsTradeable(bag, slot)
 end
 
 function LootRaffle_IsSoulbound(bag, slot)
-    return LootRaffle_SearchBagItemTooltip(bag, slot, ITEM_SOULBOUND) or LootRaffle_SearchBagItemTooltip(bag, slot, ITEM_BIND_ON_PICKUP)
+    return LootRaffle_SearchBagItemTooltip(bag, slot, ITEM_SOULBOUND)
 end
 
 function LootRaffle_ItemCanBeUsedByClass(itemLink, class)
@@ -441,28 +441,27 @@ function LootRaffle_ItemCanBeUsedByClass(itemLink, class)
     return true
 end
 
-LootRaffle_ParseItemTooltip = CreateFrame("GameTooltip","LootRaffle_ParseItemTooltip",nil,"GameTooltipTemplate")
+local parseItemTooltip = CreateFrame("GameTooltip","LootRaffle_ParseItemTooltip",nil,"GameTooltipTemplate")
 function LootRaffle_SearchBagItemTooltip(bag, slot, pattern)
     --LootRaffle.Log("Searching for", pattern, "in item tooltip for bag/slot:", bag, "/", slot)
-    LootRaffle_ParseItemTooltip:SetOwner(UIParent, "ANCHOR_NONE")
-    LootRaffle_ParseItemTooltip:SetBagItem(bag, slot)
+    parseItemTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+    parseItemTooltip:SetBagItem(bag, slot)
     return LootRaffle_SearchTooltip(pattern)
 end
 
 function LootRaffle_SearchItemLinkTooltip(itemLink, pattern)
     --LootRaffle.Log("Searching for", pattern, "in item tooltip for itemLink:", itemLink)
-    LootRaffle_ParseItemTooltip:SetOwner(UIParent, "ANCHOR_NONE")
-    LootRaffle_ParseItemTooltip:SetHyperlink(itemLink)    
+    parseItemTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+    parseItemTooltip:SetHyperlink(itemLink)    
     return LootRaffle_SearchTooltip(pattern)
 end
 
 function LootRaffle_SearchTooltip(pattern)
-    LootRaffle_ParseItemTooltip:Show()
-    for i = 1,LootRaffle_ParseItemTooltip:NumLines() do
-        local tooltipLine = _G["GameTooltipTextLeft"..i]
+    parseItemTooltip:Show()
+    for i = 1,parseItemTooltip:NumLines() do
+        local tooltipLine = _G["LootRaffle_ParseItemTooltipTextLeft"..i]
         if tooltipLine then
             local text = tooltipLine:GetText()
-            print(text)
             if text and (text == pattern or string.find(text, pattern)) then
                 return true
             end
@@ -470,7 +469,7 @@ function LootRaffle_SearchTooltip(pattern)
             LootRaffle.Log("Failed to read parsing tooltip text line", i)
         end
     end
-    LootRaffle_ParseItemTooltip:Hide()
+    parseItemTooltip:Hide()
     return false
 end
 
