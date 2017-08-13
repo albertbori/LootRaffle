@@ -315,7 +315,7 @@ end
 function LootRaffle_GetUnitNameFromPlayerName(playerName, playerRealmName)
     local sameRealm = select(2, UnitFullName("player")) == playerRealmName -- unit full name sometimes returns nil for other players on the same realm
 
-    if IsInRaid() then
+    if IsInRaid() or IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
         local raidMemberCount = GetNumGroupMembers()
         for i = 1, raidMemberCount do
             local name, realmName = UnitFullName("raid"..i)
@@ -338,7 +338,7 @@ function LootRaffle_GetUnitNameFromPlayerName(playerName, playerRealmName)
 end
 
 function LootRaffle_GetGroupSize()
-    if IsInRaid() then
+    if IsInRaid() or IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
         return GetNumGroupMembers()
     else
         local partyRoster = GetHomePartyInfo()
