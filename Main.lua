@@ -10,7 +10,7 @@ LootRaffle = {
     ROLL_ON_ITEM_MESSAGE = "LR_ROLL",
     Log = function (...)
         if LootRaffle.LoggingEnabled then
-            print("LootRaffle:", ...)
+            print("[LootRaffle]", ...)
         end
     end,
     PossibleRaffleItems = {},
@@ -191,12 +191,12 @@ function LootRaffle_EndRaffle(raffle)
     for i,rollType in ipairs(LootRaffle_ROLLTYPES) do
         if rollType ~= "PASS" and raffle.RollerCounts[rollType] > 0 then
             local winner = raffle.Rollers[rollType][math.random(raffle.RollerCounts[rollType])]
-            SendChatMessage(winner.playerName.."-"..winner.realmName.." has won "..raffle.itemLink..".", LootRaffle_GetCurrentChannelName())
+            SendChatMessage("[LootRaffle] "..winner.playerName.."-"..winner.realmName.." has won "..raffle.itemLink..".", LootRaffle_GetCurrentChannelName())
             LootRaffle_AwardItem(raffle.itemLink, winner.playerName, winner.realmName)
             return
         end
     end
-    SendChatMessage("No one wanted "..raffle.itemLink..".", LootRaffle_GetCurrentChannelName())        
+    SendChatMessage("[LootRaffle] No one wanted "..raffle.itemLink..".", LootRaffle_GetCurrentChannelName())        
 end
 
 function LootRaffle_AwardItem(itemLink, playerName, playerRealmName)

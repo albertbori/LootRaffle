@@ -41,7 +41,7 @@ function SlashCmdList.LootRaffle(msg, editbox)
 
         local bag, slot = LootRaffle_GetBagPosition(itemLink)
         if not IsInGroup() then
-            print("LootRaffle can only be used in a party or raid group.")            
+            print("[LootRaffle] can only be used in a party or raid group.")            
         elseif not LootRaffle_IsTradeable(bag, slot) then
             print("[LootRaffle] Item is not tradable.")
         else
