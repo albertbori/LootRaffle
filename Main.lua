@@ -3,6 +3,7 @@ local _, LootRaffle_Local=...
 LootRaffle = {
     MinimumQuality = LootRaffle_ItemQuality.Rare,
     RaffleLengthInSeconds = 60,
+    PugRaffleRaffleLengthInSeconds = 20, --this is lower due to people being impatient, and the possibility of subsequent queues after the last boss of LFR is killed
     LoggingEnabled = false,
     AutoDetectLootedItems = true,
     NEW_RAFFLE_MESSAGE = "LR_START",
@@ -98,7 +99,7 @@ function LootRaffle_StartRaffle(itemLink)
         Rollers = {}, 
         RollerCounts = {}, 
         ResponderCount = 0, 
-        GroupSize = LootRaffle_GetGroupSize() 
+        GroupSize = LootRaffle_GetGroupSize()
      }
     for i,rollType in ipairs(LootRaffle_ROLLTYPES) do
         raffle.RollerCounts[rollType] = 0
@@ -108,7 +109,7 @@ function LootRaffle_StartRaffle(itemLink)
     LootRaffle.MyRaffledItemsCount = LootRaffle.MyRaffledItemsCount + 1
     local playerName, playerRealmName = UnitFullName('player')
     SendAddonMessage(LootRaffle.NEW_RAFFLE_MESSAGE, strjoin("^", playerName, playerRealmName or string.gsub(GetRealmName(), "%s+", ""), itemLink), LootRaffle_GetCurrentChannelName())
-    SendChatMessage("[LootRaffle] whisper me if you want "..itemLink.." (or roll using the LootRaffle addon).", LootRaffle_GetCurrentChannelName())
+    SendChatMessage("[LootRaffle] whisper me if you want "..itemLink.." (or roll using the LootRaffle addon) within the next "..LootRaffle_GetRaffleLengthInSeconds().." seconds.", LootRaffle_GetCurrentChannelName())
 end
 
 function LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType, fromWhisper)
@@ -167,7 +168,7 @@ function LootRaffle_CheckRollStatus()
     for i=#LootRaffle.MyRaffledItems,1,-1 do
         local raffle = LootRaffle.MyRaffledItems[i]
         local secondsLapsed = LootRaffle.CurrentTimeInSeconds - raffle.timeInSeconds
-        if secondsLapsed > LootRaffle.RaffleLengthInSeconds then
+        if secondsLapsed > LootRaffle_GetRaffleLengthInSeconds() then
             LootRaffle.Log("Raffle time limit reached. Ending raffle...")
             LootRaffle_EndRaffle(raffle)
         end
@@ -253,7 +254,7 @@ function LootRaffle_ShowRollWindow(itemLink, playerName, playerRealmName)
 
     local rollWindow = CreateFrame("Frame", "LootRaffle_RollWindow_" .. (LootRaffle.RollWindowsCount + 1), LootRaffle_Frame, "LootRaffle_RollWindowTemplate")
     rollWindow.data = { itemLink = itemLink, playerName = playerName, playerRealmName = playerRealmName, createdTimeInSeconds = LootRaffle.CurrentTimeInSeconds, elapsedTimeInSeconds = 0 }
-    rollWindow.Timer:SetMinMaxValues(0, LootRaffle.RaffleLengthInSeconds)
+    rollWindow.Timer:SetMinMaxValues(0, LootRaffle_GetRaffleLengthInSeconds())
     rollWindow.IconFrame.Icon:SetTexture(texture)
     rollWindow.Name:SetText(name)
 
@@ -282,13 +283,13 @@ function LootRaffle_OnRollWindowUpdate(self, elapsed)
     parent.data.elapsedTimeInSeconds = parent.data.elapsedTimeInSeconds + elapsed
 
     -- check for expiration
-    if parent.data.elapsedTimeInSeconds >= LootRaffle.RaffleLengthInSeconds then
+    if parent.data.elapsedTimeInSeconds >= LootRaffle_GetRaffleLengthInSeconds() then
         LootRaffle.RollWindowsCount = LootRaffle.RollWindowsCount - 1
         parent:Hide()
         return
     end
 
-	local left = math.max(LootRaffle.RaffleLengthInSeconds - parent.data.elapsedTimeInSeconds, 0)
+	local left = math.max(LootRaffle_GetRaffleLengthInSeconds() - parent.data.elapsedTimeInSeconds, 0)
 	local min, max = self:GetMinMaxValues();
 	if ( (left < min) or (left > max) ) then
 		left = min;
@@ -347,6 +348,14 @@ function LootRaffle_GetGroupSize()
             partySize = partySize + 1
         end
         return partySize
+    end
+end
+
+function LootRaffle_GetRaffleLengthInSeconds()
+    if  IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then 
+        return LootRaffle.PugRaffleRaffleLengthInSeconds 
+    else
+        return LootRaffle.RaffleLengthInSeconds
     end
 end
 
