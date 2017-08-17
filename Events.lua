@@ -75,8 +75,10 @@ end
 
 local LootedItems = {}
 local LootedItemsCount = 0
-local function OnItemLooted(message, sender, language, channelString, target, flags, unknown, channelNumber, channelName, unknown, counter)
-    if target ~= UnitName('player') or not IsInGroup() then return end
+local function OnItemLooted(message, sender, language, channelString, target, flags, unknown, channelNumber, channelName, unknown, counter)    
+    if target ~= UnitName("player") or not IsInGroup() then return end
+    local instanceType = select(2, IsInInstance())
+    if instanceType ~= "party" and instanceType ~= "raid" then return end
 
     LootRaffle.Log("Queuing looted item:", message)
     table.insert(LootedItems, { message = message, tries = 0 })
