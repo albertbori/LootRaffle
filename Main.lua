@@ -380,17 +380,17 @@ end
 
 function LootRaffle_UnitCanUseItem(unitName, itemLink)
     local name, link, quality, itemLevel, requiredLevel, itemClass, itemSubClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemLink)
-    LootRaffle.Log("Checking to see if", unitName, "can use item:", link, "| itemClass:", itemClass, "| itemSubClass:", itemSubClass, "| equipSlot:", equipSlot)
+    local localizedClassName, classCodeName, classIndex = UnitClass(unitName)
+    LootRaffle.Log("Checking to see if", unitName, "(", localizedClassName, "|", classCodeName, ") can use item:", link, "| itemClass:", itemClass, "| itemSubClass:", itemSubClass, "| equipSlot:", equipSlot)
 
     -- if it's armor or weapon, check if class can use it.
-    if (itemClass == "ARMOR" or itemClass == "WEAPON") and itemSubClass ~= "Miscellaneous" and equipSlot ~= "INVTYPE_CLOAK" then
+    if (itemClass == "Armor" or itemClass == "Weapon") and itemSubClass ~= "Miscellaneous" and equipSlot ~= "INVTYPE_CLOAK" then
         local isProficient = false
         local proficientSubClasses = LootRaffle_ClassProficiencies[classCodeName][itemClass]
         local proficientSubClassCount = 0
         for i,proficientSubClass in ipairs(proficientSubClasses) do
             proficientSubClassCount = proficientSubClassCount + 1
             if proficientSubClass == itemSubClass then
-                LootRaffle.Log("Player can use "..itemClass.." of type "..itemSubClass)
                 isProficient = true
                 break
             end
@@ -402,9 +402,18 @@ function LootRaffle_UnitCanUseItem(unitName, itemLink)
     end
 
     -- if it's class-specific item, check if this class can use it
-    local localizedClassName, classCodeName, classIndex = UnitClass(unitName)
-    if not LootRaffle_ItemCanBeUsedByClass(link, localizedClassName) then
+    if not LootRaffle_ItemPassesClassRestriction(link, localizedClassName) then
         LootRaffle.Log("Player CANNOT use "..itemClass.." of type "..itemSubClass..". Class restriction doesn't match.")
+        return false
+    end
+
+    if equipSlot == "INVTYPE_TRINKET" and not LootRaffle_ClassCanUseItemStat(link, classCodeName) then
+        LootRaffle.Log("Player CANNOT use "..itemClass.." of type "..itemSubClass..". Wrong stats for class.")
+        return false
+    end
+
+    if itemSubClass == "Artifact Relic" and not LootRaffle_ClassCanUseRelic(link, classCodeName) then
+        LootRaffle.Log("Player CANNOT use "..itemClass.." of type "..itemSubClass..". Wrong reilc type for class.")
         return false
     end
 
@@ -441,38 +450,71 @@ function LootRaffle_IsSoulbound(bag, slot)
     return LootRaffle_SearchBagItemTooltip(bag, slot, ITEM_SOULBOUND)
 end
 
-function LootRaffle_ItemCanBeUsedByClass(itemLink, class)
-    local starts, ends = string.find(BIND_TRADE_TIME_REMAINING, "%%s")
-    local firstHalf = LootRaffle_EscapePatternCharacters(string.sub(BIND_TRADE_TIME_REMAINING, 1, starts-1))
+function LootRaffle_ItemPassesClassRestriction(itemLink, class)
+    local starts, ends = string.find(ITEM_CLASSES_ALLOWED , "%%s")
+    local firstHalf = LootRaffle_EscapePatternCharacters(string.sub(ITEM_CLASSES_ALLOWED, 1, starts-1))
     if LootRaffle_SearchItemLinkTooltip(itemLink, firstHalf) and not LootRaffle_SearchItemLinkTooltip(itemLink, firstHalf..class) then
         return false
     end
     return true
 end
 
+function LootRaffle_ClassCanUseItemStat(itemLink, classCodeName)
+    --if it has strength, agility or int, check for class proficiency match
+    if LootRaffle_SearchItemLinkTooltip(itemLink, { SPELL_STAT1_NAME, SPELL_STAT2_NAME, SPELL_STAT4_NAME }) then
+        local mainStats = LootRaffle_ClassProficiencies[classCodeName]["MainStats"]
+        if LootRaffle_SearchItemLinkTooltip(itemLink, mainStats) then
+            return true
+        end
+        return false
+    end
+    return true
+end
+
+function LootRaffle_ClassCanUseRelic(itemLink, classCodeName)
+    local relics = LootRaffle_ClassProficiencies[classCodeName]["Relics"]
+    local relicPatterns = {}
+    for i,relicType in ipairs(relics) do
+        local pattern = string.gsub(RELIC_TOOLTIP_TYPE, "%%s", relicType)
+        table.insert(relicPatterns, pattern)
+    end
+    if LootRaffle_SearchItemLinkTooltip(itemLink, relicPatterns) then
+        return true
+    end
+    return false
+end
+
 local parseItemTooltip = CreateFrame("GameTooltip","LootRaffle_ParseItemTooltip",nil,"GameTooltipTemplate")
-function LootRaffle_SearchBagItemTooltip(bag, slot, pattern)
-    --LootRaffle.Log("Searching for", pattern, "in item tooltip for bag/slot:", bag, "/", slot)
+function LootRaffle_SearchBagItemTooltip(bag, slot, patterns)
+    --LootRaffle.Log("Searching for", patterns, "in item tooltip for bag/slot:", bag, "/", slot)
     parseItemTooltip:SetOwner(UIParent, "ANCHOR_NONE")
     parseItemTooltip:SetBagItem(bag, slot)
-    return LootRaffle_SearchTooltip(pattern)
+    return LootRaffle_SearchTooltip(patterns)
 end
 
-function LootRaffle_SearchItemLinkTooltip(itemLink, pattern)
-    --LootRaffle.Log("Searching for", pattern, "in item tooltip for itemLink:", itemLink)
+function LootRaffle_SearchItemLinkTooltip(itemLink, patterns)
+    --LootRaffle.Log("Searching for", patterns, "in item tooltip for itemLink:", itemLink)
     parseItemTooltip:SetOwner(UIParent, "ANCHOR_NONE")
     parseItemTooltip:SetHyperlink(itemLink)    
-    return LootRaffle_SearchTooltip(pattern)
+    return LootRaffle_SearchTooltip(patterns)
 end
 
-function LootRaffle_SearchTooltip(pattern)
+function LootRaffle_SearchTooltip(patterns)
     parseItemTooltip:Show()
     for i = 1,parseItemTooltip:NumLines() do
         local tooltipLine = _G["LootRaffle_ParseItemTooltipTextLeft"..i]
         if tooltipLine then
             local text = tooltipLine:GetText()
-            if text and (text == pattern or string.find(text, pattern)) then
-                return true
+            if (type(patterns) == "table") then
+                for x,pattern in ipairs(patterns) do
+                    if text and (text == pattern or string.find(text, pattern)) then
+                        return true
+                    end
+                end
+            else
+                if text and (text == patterns or string.find(text, patterns)) then
+                    return true
+                end
             end
         else
             LootRaffle.Log("Failed to read parsing tooltip text line", i)
