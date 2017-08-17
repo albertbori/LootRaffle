@@ -23,10 +23,34 @@ function SlashCmdList.LootRaffle(msg, editbox)
         print("[LootRaffle] Automatic raffle prompt disabled.")
     elseif string.find(msg, "test") then
         local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
+        print("[LootRaffle] Testing item: "..itemLink)
         if itemLink then
             local bag, slot = LootRaffle_GetBagPosition(itemLink)
             local playerName, playerRealmName = UnitFullName('player')
             LootRaffle_ShowRollWindow(itemLink, playerName, playerRealmName)
+        end
+    elseif string.find(msg, "tradable") then
+        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
+        print("[LootRaffle] Testing if item: "..itemLink.." is tradable.")
+        if itemLink then
+            local bag, slot = LootRaffle_GetBagPosition(itemLink)
+            if LootRaffle_IsTradeable(bag, slot) then
+                print("[LootRaffle] "..itemLink.." is tradable.")
+            else
+                print("[LootRaffle] "..itemLink.." is NOT tradable.")
+            end
+        end
+    elseif string.find(msg, "usable") then
+        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
+        local unitName = string.match(msg, "usable (%w+) ")
+        if not unitName then unitName = "player" end
+        print("[LootRaffle] Testing if item: "..itemLink.." is usable by "..unitName)
+        if itemLink then
+            if LootRaffle_UnitCanUseItem(unitName, itemLink) then
+                print("[LootRaffle] "..itemLink.." is usable by "..unitName..".")
+            else
+                print("[LootRaffle] "..itemLink.." is NOT usable "..unitName..".")
+            end
         end
     else
         -- try for item
