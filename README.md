@@ -15,10 +15,11 @@ This addon allows players to easily share rare loot during dungeon or raid encou
 - Class set-piece filtering
 - Player distance detection and auto-retry trading
 - End roll as soon as all eligible players roll or pass
+- Relic type filtering
+- Trinket main-stat filtering
 
 
 ## Planned Features
 
-- Relic type filtering
 - Configuration settings (roll length, logging, position)
 - Localization
