@@ -317,12 +317,16 @@ function LootRaffle_GetUnitNameFromPlayerName(playerName, playerRealmName)
     local sameRealm = select(2, UnitFullName("player")) == playerRealmName -- unit full name sometimes returns nil for other players on the same realm
 
     if IsInRaid() or IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
+        local groupPrefix = "party"
+        if IsInRaid() then 
+            groupPrefix = "raid"
+        end
         local raidMemberCount = GetNumGroupMembers()
         for i = 1, raidMemberCount do
-            local name, realmName = UnitFullName("raid"..i)
+            local name, realmName = UnitFullName(groupPrefix..i)
             if playerName == name and (sameRealm or playerRealmName == realmName) then
-                LootRaffle.Log("Unit name for ", name, realmName, "is", "raid"..i)
-                return "raid"..i
+                LootRaffle.Log("Unit name for ", name, realmName, "is", groupPrefix..i)
+                return groupPrefix..i
             end
         end
     elseif IsInGroup() then
