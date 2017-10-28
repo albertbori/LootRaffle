@@ -25,7 +25,7 @@ function SlashCmdList.LootRaffle(msg, editbox)
         local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
         print("[LootRaffle] Testing item: "..itemLink)
         if itemLink then
-            local bag, slot = LootRaffle_GetBagPosition(itemLink)
+            local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
             local playerName, playerRealmName = UnitFullName('player')
             LootRaffle_ShowRollWindow(itemLink, playerName, playerRealmName)
         end
@@ -33,8 +33,8 @@ function SlashCmdList.LootRaffle(msg, editbox)
         local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
         print("[LootRaffle] Testing if item: "..itemLink.." is tradable.")
         if itemLink then
-            local bag, slot = LootRaffle_GetBagPosition(itemLink)
-            if LootRaffle_IsTradable(bag, slot) then
+            local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
+            if bag and slot then
                 print("[LootRaffle] "..itemLink.." is tradable.")
             else
                 print("[LootRaffle] "..itemLink.." is NOT tradable.")
@@ -63,10 +63,10 @@ function SlashCmdList.LootRaffle(msg, editbox)
             return
         end
 
-        local bag, slot = LootRaffle_GetBagPosition(itemLink)
+        local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
         if not IsInGroup() then
             print("[LootRaffle] can only be used in a party or raid group.")            
-        elseif not LootRaffle_IsTradable(bag, slot) then
+        elseif not bag or not slot then
             print("[LootRaffle] Item is not tradable.")
         else
             LootRaffle_StartRaffle(itemLink)
@@ -136,7 +136,7 @@ local function ProcessLootedItems()
                 LootedItemsCount = LootedItemsCount - 1
             else
                 if name then
-                    local bag, slot = LootRaffle_GetBagPosition(link)
+                    local bag, slot = LootRaffle_GetTradableItemBagPosition(link)
                     if bag and slot then
                         -- LootRaffle.Log("Looted item data requests fnished for", link)
                         LootRaffle_TryDetectNewRaffleOpportunity(link, quality, bag, slot)

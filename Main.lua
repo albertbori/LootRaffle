@@ -58,7 +58,7 @@ function LootRaffle_TryDetectNewRaffleOpportunity(itemLink, quality, bag, slot)
         return
     end
     -- must be of minimum quality, the owner of the item, in a group of some type, and the item be tradable
-    if quality >= LootRaffle.MinimumQuality and IsInGroup() and LootRaffle_IsTradable(bag, slot) then
+    if quality >= LootRaffle.MinimumQuality and IsInGroup() then
         LootRaffle.Log("LootRaffle detected new tradable loot: ", itemLink)
         LootRaffle_TryPromptForRaffle(itemLink)
     end
@@ -119,12 +119,12 @@ function LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType,
         for i,raffle in ipairs(LootRaffle.MyRaffledItems) do
             if LootRaffle_UnitCanUseItem(rollerUnitName, raffle.itemLink) then
                 itemLink = LootRaffle.MyRaffledItems[i].itemLink
-                LootRaffle.Log("Roll recieved didn't contain an item link. Assigned:", itemLink)
+                LootRaffle.Log("Roll received didn't contain an item link. Assigned:", itemLink)
                 break
             end
         end
         if not itemLink then
-            LootRaffle.Log("No matching raffles found for whisper roll.")
+            LootRaffle.Log("No eligible raffles found for whisper roll.")
             return
         end
     end
@@ -211,7 +211,7 @@ function LootRaffle_TryTradeWinners()
 
     local pendingTrade = LootRaffle.PendingTrades[1]
     local winnerUnitName = LootRaffle_GetUnitNameFromPlayerName(pendingTrade.playerName, pendingTrade.playerRealmName)
-    local bag, slot = LootRaffle_GetBagPosition(pendingTrade.itemLink)
+    local bag, slot = LootRaffle_GetTradableItemBagPosition(pendingTrade.itemLink)
     local canTrade = true
     if not winnerUnitName or not bag or not slot then
         canTrade = false
@@ -363,17 +363,17 @@ function LootRaffle_GetRaffleLengthInSeconds()
     end
 end
 
-function LootRaffle_GetBagPosition(itemLink)
+function LootRaffle_GetTradableItemBagPosition(itemLink)
     LootRaffle.Log("Searching for", itemLink, "in bags...")
     local variantFragmentPattern = LootRaffle_EscapePatternCharacters(select(1, GetItemInfo(itemLink))).." of "
     for bag = NUM_BAG_SLOTS, 0, -1 do
         local slotCount = GetContainerNumSlots(bag)
         for slot = slotCount, 1, -1 do
             local containerItemLink = GetContainerItemLink(bag, slot)
-            if containerItemLink == itemLink then
+            if containerItemLink == itemLink and LootRaffle_IsTradable(bag, slot) then
                 LootRaffle.Log(itemLink.." found in slot: "..bag..","..slot)
                 return bag, slot
-            elseif containerItemLink and string.find(containerItemLink, variantFragmentPattern) then -- check for variant. "Bracers of Intelletct", etc.
+            elseif containerItemLink and string.find(containerItemLink, variantFragmentPattern) and LootRaffle_IsTradable(bag, slot) then -- check for variant. "Bracers of Intelletct", etc.
                 LootRaffle.Log("Green item variant for "..itemLink.." found in slot: "..bag..","..slot)
                 return bag, slot
             end
