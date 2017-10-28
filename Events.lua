@@ -184,7 +184,7 @@ local function OnWhisperReceived(msg, author, language, status, msgid, unknown, 
     -- try for item
     local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(msg)
     LootRaffle.Log("Discovered whisper roll from ", playerName, playerRealmName, "for item", itemLink)
-    LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, "GREED", true) -- we don't know what priority people without the addon are rolling. default to greed.
+    LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, "NEED", true)
 end
 
 local function OnItemInfoRecieved(itemId)
