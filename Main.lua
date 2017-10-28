@@ -207,37 +207,33 @@ function LootRaffle_AwardItem(itemLink, playerName, playerRealmName)
 end
 
 function LootRaffle_TryTradeWinners()
-    if #LootRaffle.PendingTrades == 0 then return end
+    if #LootRaffle.PendingTrades == 0 or TradeWindowIsOpen then return end
 
     local pendingTrade = LootRaffle.PendingTrades[1]
     local winnerUnitName = LootRaffle_GetUnitNameFromPlayerName(pendingTrade.playerName, pendingTrade.playerRealmName)
-    local bag, slot = LootRaffle_GetTradableItemBagPosition(pendingTrade.itemLink)
     local canTrade = true
-    if not winnerUnitName or not bag or not slot then
+    if not winnerUnitName then
         canTrade = false
         LootRaffle.Log("Trade attempt failed, data not available for", pendingTrade.itemLink)
-    elseif UnitIsDeadOrGhost(winnerUnitName) then -- 10 yards
+    elseif UnitIsDeadOrGhost(winnerUnitName) then
         canTrade = false
         LootRaffle.Log("Trade failed, winner is dead")
-    elseif UnitDistanceSquared(winnerUnitName) ^ 0.5 > 10 then
+    elseif UnitDistanceSquared(winnerUnitName) ^ 0.5 > 7 then -- 7 yards (10 yards max, but want users to be super close)
         canTrade = false
         LootRaffle.Log("Trade failed, winner is out of range:", UnitDistanceSquared(winnerUnitName) ^ 0.5)
     end
 
     if not canTrade then
         pendingTrade.tryCount = pendingTrade.tryCount + 1
-        if pendingTrade.tryCount >= 30 then
+        if pendingTrade.tryCount >= 60 then
             table.remove(LootRaffle.PendingTrades, 1)
             print("[LootRaffle] Unable to auto-trade "..pendingTrade.itemLink.." with "..pendingTrade.playerName.."-"..pendingTrade.playerRealmName..". You will have to trade manually.")
         end
         return
     end
 
-    table.remove(LootRaffle.PendingTrades, 1)
-
     LootRaffle.Log("Attempting to trade with", winnerUnitName)
     InitiateTrade(winnerUnitName)
-    PickupContainerItem(bag, slot)
 end
 
 -- -------------------------------------------------------------

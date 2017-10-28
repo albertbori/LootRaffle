@@ -206,6 +206,27 @@ end
 local function OnTradeOpened(...)
     TradeWindowIsOpen = true
     -- print("OnTradeOpened", ...)
+    if #LootRaffle.PendingTrades == 0 then return end
+
+    local pendingTrade = LootRaffle.PendingTrades[1]
+    local bag, slot = LootRaffle_GetTradableItemBagPosition(pendingTrade.itemLink)
+    
+    LootRaffle.Log("Trade opened, presumably for", pendingTrade.itemLink)
+
+    PickupContainerItem(bag, slot)
+    ClickTradeButton(1)
+    -- AcceptTrade() -- Not allowed outside of a secure event
+end
+
+local function OnTradeAccept(playerAccepted, targetAccepted)
+    -- print("OnTradeAccept", playerAccepted, targetAccepted)
+
+    if #LootRaffle.PendingTrades == 0 or playerAccepted == 0 or targetAccepted == 0 then return end
+    
+    local pendingTrade = LootRaffle.PendingTrades[1]
+    LootRaffle.Log("Trade completed, presumably for", pendingTrade.itemLink)
+    
+    table.remove(LootRaffle.PendingTrades, 1)
 end
 
 local function OnTradeClosed(...)
@@ -227,11 +248,12 @@ local eventHandlers = {
     CHAT_MSG_LOOT = OnItemLooted,
     CHAT_MSG_ADDON = OnMessageRecieved,
     GET_ITEM_INFO_RECEIVED = OnItemInfoRecieved,
-    TRADE_OPENED = OnTradeOpened,
+    TRADE_SHOW = OnTradeOpened,
     TRADE_CLOSED = OnTradeClosed,
     LOOT_OPENED = OnLootWindowOpen,
     LOOT_CLOSED = OnLootWindowClose,
-    CHAT_MSG_WHISPER = OnWhisperReceived
+    CHAT_MSG_WHISPER = OnWhisperReceived,
+    TRADE_ACCEPT_UPDATE = OnTradeAccept
 }
 
 -- associate event handlers to desired events
