@@ -24,5 +24,4 @@ This addon allows players to easily share rare loot during dungeon or raid encou
 - Configuration settings (roll length, logging, position)
 - Ignore items
 - Roll info transparency
-- Improved trading (distance detection, better slot selection)
 - Localization
