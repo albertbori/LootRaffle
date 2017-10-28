@@ -58,8 +58,8 @@ function LootRaffle_TryDetectNewRaffleOpportunity(itemLink, quality, bag, slot)
         return
     end
     -- must be of minimum quality, the owner of the item, in a group of some type, and the item be tradable
-    if quality >= LootRaffle.MinimumQuality and IsInGroup() and LootRaffle_IsTradeable(bag, slot) then
-        LootRaffle.Log("LootRaffle detected new tradeable loot: ", itemLink)
+    if quality >= LootRaffle.MinimumQuality and IsInGroup() and LootRaffle_IsTradable(bag, slot) then
+        LootRaffle.Log("LootRaffle detected new tradable loot: ", itemLink)
         LootRaffle_TryPromptForRaffle(itemLink)
     end
 end
@@ -430,7 +430,7 @@ function LootRaffle_GetItemIconBorderAtlas(quality)
     return "loottoast-itemborder-blue"
 end
 
-function LootRaffle_IsTradeable(bag, slot)
+function LootRaffle_IsTradable(bag, slot)
     if not LootRaffle_IsSoulbound(bag, slot) then
         LootRaffle.Log("Item in slot: ", bag, ",", slot, " is tradable. (Not Soulbound)")
         return true
@@ -441,13 +441,13 @@ function LootRaffle_IsTradeable(bag, slot)
     local starts, ends = string.find(BIND_TRADE_TIME_REMAINING, "%%s")
     local firstHalf = LootRaffle_EscapePatternCharacters(string.sub(BIND_TRADE_TIME_REMAINING, 1, starts-1))
     local secondHalf = LootRaffle_EscapePatternCharacters(string.sub(BIND_TRADE_TIME_REMAINING, ends+1, string.len(BIND_TRADE_TIME_REMAINING)))
-    local isTradeableBoP = LootRaffle_SearchBagItemTooltip(bag, slot, firstHalf) and LootRaffle_SearchBagItemTooltip(bag, slot, secondHalf)
-    if isTradeableBoP then
+    local isTradableBoP = LootRaffle_SearchBagItemTooltip(bag, slot, firstHalf) and LootRaffle_SearchBagItemTooltip(bag, slot, secondHalf)
+    if isTradableBoP then
         LootRaffle.Log("Item in slot: ", bag, ",", slot, " is a temporarily tradable soulbound item.")
     else
         LootRaffle.Log("Item in slot: ", bag, ",", slot, " is not tradable (Soulbound).")
     end
-    return isTradeableBoP
+    return isTradableBoP
 end
 
 function LootRaffle_IsSoulbound(bag, slot)

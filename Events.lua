@@ -34,7 +34,7 @@ function SlashCmdList.LootRaffle(msg, editbox)
         print("[LootRaffle] Testing if item: "..itemLink.." is tradable.")
         if itemLink then
             local bag, slot = LootRaffle_GetBagPosition(itemLink)
-            if LootRaffle_IsTradeable(bag, slot) then
+            if LootRaffle_IsTradable(bag, slot) then
                 print("[LootRaffle] "..itemLink.." is tradable.")
             else
                 print("[LootRaffle] "..itemLink.." is NOT tradable.")
@@ -66,7 +66,7 @@ function SlashCmdList.LootRaffle(msg, editbox)
         local bag, slot = LootRaffle_GetBagPosition(itemLink)
         if not IsInGroup() then
             print("[LootRaffle] can only be used in a party or raid group.")            
-        elseif not LootRaffle_IsTradeable(bag, slot) then
+        elseif not LootRaffle_IsTradable(bag, slot) then
             print("[LootRaffle] Item is not tradable.")
         else
             LootRaffle_StartRaffle(itemLink)
