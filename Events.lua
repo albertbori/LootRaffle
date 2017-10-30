@@ -25,7 +25,7 @@ function SlashCmdList.LootRaffle(msg, editbox)
         local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
         print("[LootRaffle] Testing item: "..itemLink)
         if itemLink then
-            local bag, slot = LootRaffle_GetBagPosition(itemLink)
+            local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
             local playerName, playerRealmName = UnitFullName('player')
             LootRaffle_ShowRollWindow(itemLink, playerName, playerRealmName)
         end
@@ -33,8 +33,8 @@ function SlashCmdList.LootRaffle(msg, editbox)
         local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
         print("[LootRaffle] Testing if item: "..itemLink.." is tradable.")
         if itemLink then
-            local bag, slot = LootRaffle_GetBagPosition(itemLink)
-            if LootRaffle_IsTradeable(bag, slot) then
+            local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
+            if bag and slot then
                 print("[LootRaffle] "..itemLink.." is tradable.")
             else
                 print("[LootRaffle] "..itemLink.." is NOT tradable.")
@@ -63,10 +63,10 @@ function SlashCmdList.LootRaffle(msg, editbox)
             return
         end
 
-        local bag, slot = LootRaffle_GetBagPosition(itemLink)
+        local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
         if not IsInGroup() then
             print("[LootRaffle] can only be used in a party or raid group.")            
-        elseif not LootRaffle_IsTradeable(bag, slot) then
+        elseif not bag or not slot then
             print("[LootRaffle] Item is not tradable.")
         else
             LootRaffle_StartRaffle(itemLink)
@@ -136,7 +136,7 @@ local function ProcessLootedItems()
                 LootedItemsCount = LootedItemsCount - 1
             else
                 if name then
-                    local bag, slot = LootRaffle_GetBagPosition(link)
+                    local bag, slot = LootRaffle_GetTradableItemBagPosition(link)
                     if bag and slot then
                         -- LootRaffle.Log("Looted item data requests fnished for", link)
                         LootRaffle_TryDetectNewRaffleOpportunity(link, quality, bag, slot)
@@ -184,7 +184,11 @@ local function OnWhisperReceived(msg, author, language, status, msgid, unknown, 
     -- try for item
     local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(msg)
     LootRaffle.Log("Discovered whisper roll from ", playerName, playerRealmName, "for item", itemLink)
+<<<<<<< HEAD
     LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, "NEED", true) -- we don't know what priority people without the addon are rolling. default to need.
+=======
+    LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, "NEED", true)
+>>>>>>> 317ceda82f860778af9c7cbdaa0b4fe1acb22239
 end
 
 local function OnItemInfoRecieved(itemId)
@@ -206,6 +210,27 @@ end
 local function OnTradeOpened(...)
     TradeWindowIsOpen = true
     -- print("OnTradeOpened", ...)
+    if #LootRaffle.PendingTrades == 0 then return end
+
+    local pendingTrade = LootRaffle.PendingTrades[1]
+    local bag, slot = LootRaffle_GetTradableItemBagPosition(pendingTrade.itemLink)
+    
+    LootRaffle.Log("Trade opened, presumably for", pendingTrade.itemLink)
+
+    PickupContainerItem(bag, slot)
+    ClickTradeButton(1)
+    -- AcceptTrade() -- Not allowed outside of a secure event
+end
+
+local function OnTradeAccept(playerAccepted, targetAccepted)
+    -- print("OnTradeAccept", playerAccepted, targetAccepted)
+
+    if #LootRaffle.PendingTrades == 0 or playerAccepted == 0 or targetAccepted == 0 then return end
+    
+    local pendingTrade = LootRaffle.PendingTrades[1]
+    LootRaffle.Log("Trade completed, presumably for", pendingTrade.itemLink)
+    
+    table.remove(LootRaffle.PendingTrades, 1)
 end
 
 local function OnTradeClosed(...)
@@ -227,11 +252,12 @@ local eventHandlers = {
     CHAT_MSG_LOOT = OnItemLooted,
     CHAT_MSG_ADDON = OnMessageRecieved,
     GET_ITEM_INFO_RECEIVED = OnItemInfoRecieved,
-    TRADE_OPENED = OnTradeOpened,
+    TRADE_SHOW = OnTradeOpened,
     TRADE_CLOSED = OnTradeClosed,
     LOOT_OPENED = OnLootWindowOpen,
     LOOT_CLOSED = OnLootWindowClose,
-    CHAT_MSG_WHISPER = OnWhisperReceived
+    CHAT_MSG_WHISPER = OnWhisperReceived,
+    TRADE_ACCEPT_UPDATE = OnTradeAccept
 }
 
 -- associate event handlers to desired events
