@@ -58,8 +58,8 @@ function LootRaffle_TryDetectNewRaffleOpportunity(itemLink, quality, bag, slot)
         return
     end
     -- must be of minimum quality, the owner of the item, in a group of some type, and the item be tradable
-    if quality >= LootRaffle.MinimumQuality and IsInGroup() and LootRaffle_IsTradeable(bag, slot) then
-        LootRaffle.Log("LootRaffle detected new tradeable loot: ", itemLink)
+    if quality >= LootRaffle.MinimumQuality and IsInGroup() then
+        LootRaffle.Log("LootRaffle detected new tradable loot: ", itemLink)
         LootRaffle_TryPromptForRaffle(itemLink)
     end
 end
@@ -119,12 +119,12 @@ function LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType,
         for i,raffle in ipairs(LootRaffle.MyRaffledItems) do
             if LootRaffle_UnitCanUseItem(rollerUnitName, raffle.itemLink) then
                 itemLink = LootRaffle.MyRaffledItems[i].itemLink
-                LootRaffle.Log("Roll recieved didn't contain an item link. Assigned:", itemLink)
+                LootRaffle.Log("Roll received didn't contain an item link. Assigned:", itemLink)
                 break
             end
         end
         if not itemLink then
-            LootRaffle.Log("No matching raffles found for whisper roll.")
+            LootRaffle.Log("No eligible raffles found for whisper roll.")
             return
         end
     end
@@ -207,13 +207,12 @@ function LootRaffle_AwardItem(itemLink, playerName, playerRealmName)
 end
 
 function LootRaffle_TryTradeWinners()
-    if #LootRaffle.PendingTrades == 0 then return end
+    if #LootRaffle.PendingTrades == 0 or TradeWindowIsOpen then return end
 
     local pendingTrade = LootRaffle.PendingTrades[1]
     local winnerUnitName = LootRaffle_GetUnitNameFromPlayerName(pendingTrade.playerName, pendingTrade.playerRealmName)
-    local bag, slot = LootRaffle_GetBagPosition(pendingTrade.itemLink)
     local canTrade = true
-    if not winnerUnitName or not bag or not slot then
+    if not winnerUnitName then
         canTrade = false
         LootRaffle.Log("Trade attempt failed, data not available for", pendingTrade.itemLink)
     elseif UnitIsDeadOrGhost(winnerUnitName) then
@@ -236,18 +235,15 @@ function LootRaffle_TryTradeWinners()
 
     if not canTrade then
         pendingTrade.tryCount = pendingTrade.tryCount + 1
-        if pendingTrade.tryCount >= 30 then
+        if pendingTrade.tryCount >= 60 then
             table.remove(LootRaffle.PendingTrades, 1)
             print("[LootRaffle] Unable to auto-trade "..pendingTrade.itemLink.." with "..pendingTrade.playerName.."-"..pendingTrade.playerRealmName..". You will have to trade manually.")
         end
         return
     end
 
-    table.remove(LootRaffle.PendingTrades, 1)
-
     LootRaffle.Log("Attempting to trade with", winnerUnitName)
     InitiateTrade(winnerUnitName)
-    PickupContainerItem(bag, slot)
 end
 
 -- -------------------------------------------------------------
@@ -327,12 +323,16 @@ function LootRaffle_GetUnitNameFromPlayerName(playerName, playerRealmName)
     local sameRealm = select(2, UnitFullName("player")) == playerRealmName -- unit full name sometimes returns nil for other players on the same realm
 
     if IsInRaid() or IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
+        local groupPrefix = "party"
+        if IsInRaid() then 
+            groupPrefix = "raid"
+        end
         local raidMemberCount = GetNumGroupMembers()
         for i = 1, raidMemberCount do
-            local name, realmName = UnitFullName("raid"..i)
+            local name, realmName = UnitFullName(groupPrefix..i)
             if playerName == name and (sameRealm or playerRealmName == realmName) then
-                LootRaffle.Log("Unit name for ", name, realmName, "is", "raid"..i)
-                return "raid"..i
+                LootRaffle.Log("Unit name for ", name, realmName, "is", groupPrefix..i)
+                return groupPrefix..i
             end
         end
     elseif IsInGroup() then
@@ -369,17 +369,17 @@ function LootRaffle_GetRaffleLengthInSeconds()
     end
 end
 
-function LootRaffle_GetBagPosition(itemLink)
+function LootRaffle_GetTradableItemBagPosition(itemLink)
     LootRaffle.Log("Searching for", itemLink, "in bags...")
     local variantFragmentPattern = LootRaffle_EscapePatternCharacters(select(1, GetItemInfo(itemLink))).." of "
     for bag = NUM_BAG_SLOTS, 0, -1 do
         local slotCount = GetContainerNumSlots(bag)
         for slot = slotCount, 1, -1 do
             local containerItemLink = GetContainerItemLink(bag, slot)
-            if containerItemLink == itemLink then
+            if containerItemLink == itemLink and LootRaffle_IsTradable(bag, slot) then
                 LootRaffle.Log(itemLink.." found in slot: "..bag..","..slot)
                 return bag, slot
-            elseif containerItemLink and string.find(containerItemLink, variantFragmentPattern) then -- check for variant. "Bracers of Intelletct", etc.
+            elseif containerItemLink and string.find(containerItemLink, variantFragmentPattern) and LootRaffle_IsTradable(bag, slot) then -- check for variant. "Bracers of Intelletct", etc.
                 LootRaffle.Log("Green item variant for "..itemLink.." found in slot: "..bag..","..slot)
                 return bag, slot
             end
@@ -436,7 +436,7 @@ function LootRaffle_GetItemIconBorderAtlas(quality)
     return "loottoast-itemborder-blue"
 end
 
-function LootRaffle_IsTradeable(bag, slot)
+function LootRaffle_IsTradable(bag, slot)
     if not LootRaffle_IsSoulbound(bag, slot) then
         LootRaffle.Log("Item in slot: ", bag, ",", slot, " is tradable. (Not Soulbound)")
         return true
@@ -447,13 +447,13 @@ function LootRaffle_IsTradeable(bag, slot)
     local starts, ends = string.find(BIND_TRADE_TIME_REMAINING, "%%s")
     local firstHalf = LootRaffle_EscapePatternCharacters(string.sub(BIND_TRADE_TIME_REMAINING, 1, starts-1))
     local secondHalf = LootRaffle_EscapePatternCharacters(string.sub(BIND_TRADE_TIME_REMAINING, ends+1, string.len(BIND_TRADE_TIME_REMAINING)))
-    local isTradeableBoP = LootRaffle_SearchBagItemTooltip(bag, slot, firstHalf) and LootRaffle_SearchBagItemTooltip(bag, slot, secondHalf)
-    if isTradeableBoP then
+    local isTradableBoP = LootRaffle_SearchBagItemTooltip(bag, slot, firstHalf) and LootRaffle_SearchBagItemTooltip(bag, slot, secondHalf)
+    if isTradableBoP then
         LootRaffle.Log("Item in slot: ", bag, ",", slot, " is a temporarily tradable soulbound item.")
     else
         LootRaffle.Log("Item in slot: ", bag, ",", slot, " is not tradable (Soulbound).")
     end
-    return isTradeableBoP
+    return isTradableBoP
 end
 
 function LootRaffle_IsSoulbound(bag, slot)
