@@ -204,13 +204,20 @@ local function OnItemInfoRecieved(itemId)
 end
 
 local function OnTradeOpened(...)
-    TradeWindowIsOpen = true
-    -- print("OnTradeOpened", ...)
+    LootRaffle.TradeWindowIsOpen = true
+    LootRaffle.Log("OnTradeOpened", ...)
     if #LootRaffle.PendingTrades == 0 then return end
 
     local pendingTrade = LootRaffle.PendingTrades[1]
-    local bag, slot = LootRaffle_GetTradableItemBagPosition(pendingTrade.itemLink)
-    
+
+    -- Reduce try counts once first trade is started to prevent "forcing" a trade.
+    if pendingTrade.tryCount < 25 then
+        pendingTrade.tryCount = 25
+    end
+    pendingTrade.tryCount = pendingTrade.tryCount * 1.4 --reduce try-counts left by 40%
+    LootRaffle.Log("Trade attempts:", pendingTrade.tryCount)
+
+    local bag, slot = LootRaffle_GetTradableItemBagPosition(pendingTrade.itemLink)    
     LootRaffle.Log("Trade opened, presumably for", pendingTrade.itemLink)
 
     PickupContainerItem(bag, slot)
@@ -218,20 +225,34 @@ local function OnTradeOpened(...)
     -- AcceptTrade() -- Not allowed outside of a secure event
 end
 
-local function OnTradeAccept(playerAccepted, targetAccepted)
-    -- print("OnTradeAccept", playerAccepted, targetAccepted)
+local function ProcessTradeAcceptance()
+    LootRaffle.PlayerAcceptedTrade = false
+    if #LootRaffle.PendingTrades == 0 then return end
 
-    if #LootRaffle.PendingTrades == 0 or playerAccepted == 0 or targetAccepted == 0 then return end
-    
     local pendingTrade = LootRaffle.PendingTrades[1]
     LootRaffle.Log("Trade completed, presumably for", pendingTrade.itemLink)
     
     table.remove(LootRaffle.PendingTrades, 1)
 end
 
+local function OnTradeAccept(playerAccepted, targetAccepted)
+    LootRaffle.Log("OnTradeAccept", playerAccepted, targetAccepted)
+
+    LootRaffle.PlayerAcceptedTrade = playerAccepted == 1
+
+    if #LootRaffle.PendingTrades == 0 or playerAccepted == 0 or targetAccepted == 0 then 
+        LootRaffle.Log("Trade state changed: player:", playerAccepted, "target:", targetAccepted)
+        return
+    end
+    ProcessTradeAcceptance()
+end
+
 local function OnTradeClosed(...)
-    TradeWindowIsOpen = false
-    -- print("OnTradeClosed", ...)
+    LootRaffle.Log("OnTradeClosed", ...)
+    if LootRaffle.PlayerAcceptedTrade then
+        ProcessTradeAcceptance()
+    end
+    LootRaffle.TradeWindowIsOpen = false
 end
 
 local function SystemMessageReceived(...)

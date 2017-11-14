@@ -23,7 +23,9 @@ LootRaffle = {
     IncomingRaffleItemInfoRequestCount = 0,
     PendingTrades = {},
     RollWindows = {},
-    RollWindowsCount = 0
+    RollWindowsCount = 0,
+    TradeWindowIsOpen = false,
+    PlayerAcceptedTrade = false
 }
 
 -- Add static confirmation dialog
@@ -206,10 +208,18 @@ function LootRaffle_AwardItem(itemLink, playerName, playerRealmName)
     SendChatMessage("[LootRaffle] You won!! Move close to me so I can give you "..itemLink..".", "WHISPER", nil, LootRaffle_GetWhisperName(playerName, playerRealmName))
 end
 
-function LootRaffle_TryTradeWinners()
-    if #LootRaffle.PendingTrades == 0 or TradeWindowIsOpen then return end
-
+function LootRaffle_TryTradeWinners()    
+    if #LootRaffle.PendingTrades == 0 or LootRaffle.TradeWindowIsOpen then return end
+    
     local pendingTrade = LootRaffle.PendingTrades[1]
+    
+    pendingTrade.tryCount = pendingTrade.tryCount + 1    
+    if pendingTrade.tryCount >= 60 then
+        table.remove(LootRaffle.PendingTrades, 1)
+        print("[LootRaffle] Unable to auto-trade "..pendingTrade.itemLink.." with "..pendingTrade.playerName.."-"..pendingTrade.playerRealmName..". You will have to trade manually.")            
+        return
+    end
+
     local winnerUnitName = LootRaffle_GetUnitNameFromPlayerName(pendingTrade.playerName, pendingTrade.playerRealmName)
     local canTrade = true
     if not winnerUnitName then
@@ -225,7 +235,7 @@ function LootRaffle_TryTradeWinners()
         canTrade = false
         LootRaffle.Log("Trade failed, winner is out of range.")
         -- if LootRaffe_Following == false then 
-            if not CheckInteractDistance(winnerUnitName, 4) then -- 1: Inspect, 2: Trade, 3: Duel, 4: Follow
+            if CheckInteractDistance(winnerUnitName, 4) then -- 1: Inspect, 2: Trade, 3: Duel, 4: Follow
                 LootRaffle.Log("Auto-following winner...")
                 -- LootRaffe_Following = true
                 FollowUnit(winnerUnitName) --TODO: Check to see if this is awful.
@@ -233,14 +243,7 @@ function LootRaffle_TryTradeWinners()
         -- end
     end
 
-    if not canTrade then
-        pendingTrade.tryCount = pendingTrade.tryCount + 1
-        if pendingTrade.tryCount >= 60 then
-            table.remove(LootRaffle.PendingTrades, 1)
-            print("[LootRaffle] Unable to auto-trade "..pendingTrade.itemLink.." with "..pendingTrade.playerName.."-"..pendingTrade.playerRealmName..". You will have to trade manually.")
-        end
-        return
-    end
+    if not canTrade then return end
 
     LootRaffle.Log("Attempting to trade with", winnerUnitName)
     InitiateTrade(winnerUnitName)
