@@ -216,12 +216,22 @@ function LootRaffle_TryTradeWinners()
     if not winnerUnitName or not bag or not slot then
         canTrade = false
         LootRaffle.Log("Trade attempt failed, data not available for", pendingTrade.itemLink)
-    elseif UnitIsDeadOrGhost(winnerUnitName) then -- 10 yards
+    elseif UnitIsDeadOrGhost(winnerUnitName) then
         canTrade = false
         LootRaffle.Log("Trade failed, winner is dead")
-    elseif UnitDistanceSquared(winnerUnitName) ^ 0.5 > 10 then
+    elseif UnitAffectingCombat("player") == 1 or UnitAffectingCombat(winnerUnitName) == 1 then
         canTrade = false
-        LootRaffle.Log("Trade failed, winner is out of range:", UnitDistanceSquared(winnerUnitName) ^ 0.5)
+        LootRaffle.Log("Trade failed, player or winner is in combat.")
+    elseif not CheckInteractDistance(winnerUnitName, 2) then -- 1: Inspect, 2: Trade, 3: Duel, 4: Follow
+        canTrade = false
+        LootRaffle.Log("Trade failed, winner is out of range.")
+        -- if LootRaffe_Following == false then 
+            if not CheckInteractDistance(winnerUnitName, 4) then -- 1: Inspect, 2: Trade, 3: Duel, 4: Follow
+                LootRaffle.Log("Auto-following winner...")
+                -- LootRaffe_Following = true
+                FollowUnit(winnerUnitName) --TODO: Check to see if this is awful.
+            end
+        -- end
     end
 
     if not canTrade then
