@@ -110,8 +110,8 @@ function LootRaffle_StartRaffle(itemLink)
     table.insert(LootRaffle.MyRaffledItems, raffle)
     LootRaffle.MyRaffledItemsCount = LootRaffle.MyRaffledItemsCount + 1
     local playerName, playerRealmName = UnitFullName('player')
-    SendAddonMessage(LootRaffle.NEW_RAFFLE_MESSAGE, strjoin("^", playerName, playerRealmName or string.gsub(GetRealmName(), "%s+", ""), itemLink), LootRaffle_GetCurrentChannelName())
-    SendChatMessage("[LootRaffle] whisper me if you want "..itemLink.." (or roll using the LootRaffle addon) within the next "..LootRaffle_GetRaffleLengthInSeconds().." seconds.", LootRaffle_GetCurrentChannelName())
+    C_ChatInfo.SendAddonMessage(LootRaffle.NEW_RAFFLE_MESSAGE, strjoin("^", playerName, playerRealmName or string.gsub(GetRealmName(), "%s+", ""), itemLink), LootRaffle_GetCurrentChannelName())
+    SendChatMessage("[LootRaffle] whisper me if you want "..itemLink.." within the next "..LootRaffle_GetRaffleLengthInSeconds().." seconds.", LootRaffle_GetCurrentChannelName())
 end
 
 function LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType, fromWhisper)
@@ -255,7 +255,7 @@ end
 
 function LootRaffle_ShowRollWindow(itemLink, playerName, playerRealmName)
     if not LootRaffle_UnitCanUseItem("player", itemLink) then
-        SendAddonMessage(LootRaffle.ROLL_ON_ITEM_MESSAGE, strjoin("^", playerName, playerRealmName or string.gsub(GetRealmName(), "%s+", ""), itemLink, "PASS"), LootRaffle_GetCurrentChannelName())
+        C_ChatInfo.SendAddonMessage(LootRaffle.ROLL_ON_ITEM_MESSAGE, strjoin("^", playerName, playerRealmName or string.gsub(GetRealmName(), "%s+", ""), itemLink, "PASS"), LootRaffle_GetCurrentChannelName())
         return
     end
     LootRaffle.Log("Showing roll window...")
@@ -284,7 +284,7 @@ function LootRaffle_Roll(self, rollType)
     LootRaffle.RollWindowsCount = LootRaffle.RollWindowsCount - 1
     LootRaffle.Log("LootRaffle_Roll(", parent.data.itemLink, ", ", parent.data.playerName, ", ", parent.data.playerRealmName, ",", rollType, ")")
     local playerName, playerRealmName = UnitFullName('player')
-    SendAddonMessage(LootRaffle.ROLL_ON_ITEM_MESSAGE, strjoin("^", playerName, playerRealmName or string.gsub(GetRealmName(), "%s+", ""), parent.data.itemLink, rollType), LootRaffle_GetCurrentChannelName())
+    C_ChatInfo.SendAddonMessage(LootRaffle.ROLL_ON_ITEM_MESSAGE, strjoin("^", playerName, playerRealmName or string.gsub(GetRealmName(), "%s+", ""), parent.data.itemLink, rollType), LootRaffle_GetCurrentChannelName())
 end
 
 function LootRaffle_OnRollWindowUpdate(self, elapsed)

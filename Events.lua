@@ -255,14 +255,8 @@ local function OnTradeClosed(...)
     LootRaffle.TradeWindowIsOpen = false
 end
 
-local function SystemMessageReceived(...)
-    local message, sender, language, channelString, target, flags, unknown, channelNumber, channelName, unknown, counter = ...
-    LootRaffle.Log("System chat message was received.")
-end
-
 -- define event->handler mapping
 local eventHandlers = {
-    CHAT_MSG_SYSTEN = SystemMessageReceived,
     PLAYER_ENTERING_WORLD = OnPlayerLoad,
     ADDON_LOADED = OnLoad,
     PLAYER_LOGOUT = OnUnload,
@@ -291,8 +285,8 @@ LootRaffle_Frame:SetScript('OnEvent',
 
 -- registered chat prefixes
 
-RegisterAddonMessagePrefix(LootRaffle.NEW_RAFFLE_MESSAGE)
-RegisterAddonMessagePrefix(LootRaffle.ROLL_ON_ITEM_MESSAGE)
+C_ChatInfo.RegisterAddonMessagePrefix(LootRaffle.NEW_RAFFLE_MESSAGE)
+C_ChatInfo.RegisterAddonMessagePrefix(LootRaffle.ROLL_ON_ITEM_MESSAGE)
 
 -- continuous update handler
 
