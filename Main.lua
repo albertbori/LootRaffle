@@ -111,7 +111,7 @@ function LootRaffle_StartRaffle(itemLink)
     LootRaffle.MyRaffledItemsCount = LootRaffle.MyRaffledItemsCount + 1
     local playerName, playerRealmName = UnitFullName('player')
     C_ChatInfo.SendAddonMessage(LootRaffle.NEW_RAFFLE_MESSAGE, strjoin("^", playerName, playerRealmName or string.gsub(GetRealmName(), "%s+", ""), itemLink), LootRaffle_GetCurrentChannelName())
-    SendChatMessage("[LootRaffle] whisper me if you want "..itemLink.." within the next "..LootRaffle_GetRaffleLengthInSeconds().." seconds.", LootRaffle_GetCurrentChannelName())
+    SendChatMessage("[LootRaffle] whisper me \"NEED\", \"GREED\" or \"XMOG\" if you want "..itemLink.." within the next "..LootRaffle_GetRaffleLengthInSeconds().." seconds.", LootRaffle_GetCurrentChannelName())
 end
 
 function LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType, fromWhisper)

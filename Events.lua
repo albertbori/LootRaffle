@@ -182,6 +182,18 @@ end
 local function OnWhisperReceived(msg, author, language, status, msgid, unknown, lineId, senderGuid)
     if LootRaffle.MyRaffledItemsCount == 0 then return end
 
+    local searchableMessage = string.lower(msg)
+    local isNeedRoll = string.find(searchableMessage, "need") ~= nil
+    local isGreedRoll = string.find(searchableMessage, "greed") ~= nil
+    local isXmogRoll = string.find(searchableMessage, "xmog") ~= nil or string.find(searchableMessage, "disenchant") ~= nil
+
+    local rollType = nil
+    if isNeedRoll then rollType = "NEED"
+    elseif isGreedRoll then rollType = "GREED"
+    elseif isXmogRoll then rollType = "DE" end
+
+    if not rollType then return end
+
     local playerName, playerRealmName = string.split("-", author, 2)
     -- try for item
     local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(msg)
