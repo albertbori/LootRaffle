@@ -99,8 +99,10 @@ end
 
 local LootedItems = {}
 local LootedItemsCount = 0
-local function OnItemLooted(message, sender, language, channelString, target, flags, unknown, channelNumber, channelName, unknown, counter)    
-    if target ~= UnitName("player") or not IsInGroup() or LootRaffle.AutoDetectLootedItems == false then return end
+local function OnItemLooted(message, sender, language, channelString, target, flags, unknown, channelNumber, channelName, unknown, counter)
+    local formattedPlayerName = select(1,UnitName("player")) .. "-" .. GetRealmName()
+    LootRaffle.Log("Looted item detected for target: ", target, " | in a group: ", IsInGroup(), " | detect enabled: ", LootRaffle.AutoDetectLootedItems, " | current player: ", formattedPlayerName)    
+    if target ~= formattedPlayerName or not IsInGroup() or LootRaffle.AutoDetectLootedItems == false then return end
     local instanceType = select(2, IsInInstance())
     if instanceType ~= "party" and instanceType ~= "raid" then return end
 
