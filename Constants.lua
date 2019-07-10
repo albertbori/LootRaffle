@@ -42,13 +42,13 @@ LootRaffle_ClassProficiencies["DRUID"] = {
 LootRaffle_ClassProficiencies["HUNTER"] = {
     MainStats = { "Agility" },
     Armor = { "Mail" },
-    Weapon = { "One-Handed Axes", "Daggers", "Fist Weapons", "One-Handed Maces", "Polearms", "Staves", "One-Handed Swords", "Two-Handed Axes", "Two-Handed Swords", "Bow", "Crossbow", "Gun" },
+    Weapon = { "One-Handed Axes", "Daggers", "Fist Weapons", "One-Handed Maces", "Polearms", "Staves", "One-Handed Swords", "Two-Handed Axes", "Two-Handed Swords", "Bows", "Crossbows", "Guns" },
     Relics = { RELIC_SLOT_TYPE_WIND, RELIC_SLOT_TYPE_ARCANE, RELIC_SLOT_TYPE_IRON, RELIC_SLOT_TYPE_BLOOD, RELIC_SLOT_TYPE_LIFE }
 }
 LootRaffle_ClassProficiencies["MAGE"] = {
     MainStats = { "Intellect" },
     Armor = { "Cloth" },
-    Weapon = { "Daggers", "Staves", "One-Handed Swords", "Wand" },
+    Weapon = { "Daggers", "Staves", "One-Handed Swords", "Wands" },
     Relics = { RELIC_SLOT_TYPE_ARCANE, RELIC_SLOT_TYPE_FROST, RELIC_SLOT_TYPE_FIRE }
 }
 LootRaffle_ClassProficiencies["MONK"] = {
@@ -66,7 +66,7 @@ LootRaffle_ClassProficiencies["PALADIN"] = {
 LootRaffle_ClassProficiencies["PRIEST"] = {
     MainStats = { "Intellect" },
     Armor = { "Cloth" },
-    Weapon = { "Daggers", "One-Handed Maces", "Staves", "Wand" },
+    Weapon = { "Daggers", "One-Handed Maces", "Staves", "Wands" },
     Relics = { RELIC_SLOT_TYPE_HOLY, RELIC_SLOT_TYPE_SHADOW, RELIC_SLOT_TYPE_LIFE, RELIC_SLOT_TYPE_BLOOD }
 }
 LootRaffle_ClassProficiencies["ROGUE"] = {
@@ -84,7 +84,7 @@ LootRaffle_ClassProficiencies["SHAMAN"] = {
 LootRaffle_ClassProficiencies["WARLOCK"] = {
     MainStats = { "Intellect" },
     Armor = { "Cloth" },
-    Weapon = { "Daggers", "Staves", "One-Handed Swords", "Wand" },
+    Weapon = { "Daggers", "Staves", "One-Handed Swords", "Wands" },
     Relics = { RELIC_SLOT_TYPE_SHADOW, RELIC_SLOT_TYPE_BLOOD, RELIC_SLOT_TYPE_FIRE, RELIC_SLOT_TYPE_FEL }
 }
 LootRaffle_ClassProficiencies["WARRIOR"] = {

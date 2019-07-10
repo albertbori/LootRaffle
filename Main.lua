@@ -46,7 +46,7 @@ StaticPopupDialogs["LOOTRAFFLE_PROMPT"] = {
     whileDead = true,
     hideOnEscape = true,
     preferredIndex = 3,  -- avoid some UI taint, see http://www.wowace.com/announcements/how-to-avoid-some-ui-taint/
-    hasItemFrame = true    
+    hasItemFrame = true
 }
 
 
@@ -68,14 +68,14 @@ end
 
 function LootRaffle_TryPromptForRaffle(itemLink)
     if itemLink then
-        if LootRaffle.PossibleRafflePromptShown then 
+        if LootRaffle.PossibleRafflePromptShown then
             LootRaffle.Log("Prompt already shown. Queueing "..itemLink.."...")
             table.insert(LootRaffle.PossibleRaffleItems, itemLink)
             LootRaffle.PossibleRaffleItemCount = LootRaffle.PossibleRaffleItemCount + 1
         else
             LootRaffle_PromptForRaffle(itemLink)
         end
-        return 
+        return
     end
     if not LootRaffle.PossibleRafflePromptShown and LootRaffle.PossibleRaffleItemCount > 0 then
         local itemLink = LootRaffle.PossibleRaffleItems[1]
@@ -95,12 +95,12 @@ end
 
 function LootRaffle_StartRaffle(itemLink)
     LootRaffle.Log("LootRaffle_StartRaffle(", itemLink, ")")
-    local raffle = { 
-        itemLink = itemLink, 
-        timeInSeconds = LootRaffle.CurrentTimeInSeconds, 
-        Rollers = {}, 
-        RollerCounts = {}, 
-        ResponderCount = 0, 
+    local raffle = {
+        itemLink = itemLink,
+        timeInSeconds = LootRaffle.CurrentTimeInSeconds,
+        Rollers = {},
+        RollerCounts = {},
+        ResponderCount = 0,
         GroupSize = LootRaffle_GetGroupSize()
      }
     for i,rollType in ipairs(LootRaffle_ROLLTYPES) do
@@ -198,25 +198,25 @@ function LootRaffle_EndRaffle(raffle)
             return
         end
     end
-    SendChatMessage("[LootRaffle] No one wanted "..raffle.itemLink..".", LootRaffle_GetCurrentChannelName())        
+    SendChatMessage("[LootRaffle] No one wanted "..raffle.itemLink..".", LootRaffle_GetCurrentChannelName())
 end
 
 function LootRaffle_AwardItem(itemLink, playerName, playerRealmName)
     LootRaffle.Log("LootRaffle_AwardItem(", itemLink, ", ", playerName, ", ", playerRealmName, ")")
     table.insert(LootRaffle.PendingTrades, { itemLink = itemLink, playerName = playerName, playerRealmName = playerRealmName, tryCount = 0 })
     print("[LootRaffle] Move close to "..playerName.."-"..playerRealmName.." for auto-trading.")
-    SendChatMessage("[LootRaffle] You won!! Move close to me so I can give you "..itemLink..".", "WHISPER", nil, LootRaffle_GetWhisperName(playerName, playerRealmName))
+    SendChatMessage("[LootRaffle] Hey "..winner.playerName"-"winner.realmName" you won!! Move close to me so I can give you "..itemLink..".", "WHISPER", nil, LootRaffle_GetWhisperName(playerName, playerRealmName))
 end
 
-function LootRaffle_TryTradeWinners()    
+function LootRaffle_TryTradeWinners()
     if #LootRaffle.PendingTrades == 0 or LootRaffle.TradeWindowIsOpen then return end
-    
+
     local pendingTrade = LootRaffle.PendingTrades[1]
-    
-    pendingTrade.tryCount = pendingTrade.tryCount + 1    
+
+    pendingTrade.tryCount = pendingTrade.tryCount + 1
     if pendingTrade.tryCount >= 60 then
         table.remove(LootRaffle.PendingTrades, 1)
-        print("[LootRaffle] Unable to auto-trade "..pendingTrade.itemLink.." with "..pendingTrade.playerName.."-"..pendingTrade.playerRealmName..". You will have to trade manually.")            
+        print("[LootRaffle] Unable to auto-trade "..pendingTrade.itemLink.." with "..pendingTrade.playerName.."-"..pendingTrade.playerRealmName..". You will have to trade manually.")
         return
     end
 
@@ -234,7 +234,7 @@ function LootRaffle_TryTradeWinners()
     elseif not CheckInteractDistance(winnerUnitName, 2) then -- 1: Inspect, 2: Trade, 3: Duel, 4: Follow
         canTrade = false
         LootRaffle.Log("Trade failed, winner is out of range.")
-        -- if LootRaffe_Following == false then 
+        -- if LootRaffe_Following == false then
             if CheckInteractDistance(winnerUnitName, 4) then -- 1: Inspect, 2: Trade, 3: Duel, 4: Follow
                 LootRaffle.Log("Auto-following winner...")
                 -- LootRaffe_Following = true
@@ -327,7 +327,7 @@ function LootRaffle_GetUnitNameFromPlayerName(playerName, playerRealmName)
 
     if IsInRaid() or IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
         local groupPrefix = "party"
-        if IsInRaid() then 
+        if IsInRaid() then
             groupPrefix = "raid"
         end
         local raidMemberCount = GetNumGroupMembers()
@@ -365,8 +365,8 @@ function LootRaffle_GetGroupSize()
 end
 
 function LootRaffle_GetRaffleLengthInSeconds()
-    if  IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then 
-        return LootRaffle.PugRaffleRaffleLengthInSeconds 
+    if  IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
+        return LootRaffle.PugRaffleRaffleLengthInSeconds
     else
         return LootRaffle.RaffleLengthInSeconds
     end
@@ -508,7 +508,7 @@ end
 function LootRaffle_SearchItemLinkTooltip(itemLink, patterns)
     --LootRaffle.Log("Searching for", patterns, "in item tooltip for itemLink:", itemLink)
     parseItemTooltip:SetOwner(UIParent, "ANCHOR_NONE")
-    parseItemTooltip:SetHyperlink(itemLink)    
+    parseItemTooltip:SetHyperlink(itemLink)
     return LootRaffle_SearchTooltip(patterns)
 end
 
