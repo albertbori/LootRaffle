@@ -205,7 +205,7 @@ function LootRaffle_AwardItem(itemLink, playerName, playerRealmName)
     LootRaffle.Log("LootRaffle_AwardItem(", itemLink, ", ", playerName, ", ", playerRealmName, ")")
     table.insert(LootRaffle.PendingTrades, { itemLink = itemLink, playerName = playerName, playerRealmName = playerRealmName, tryCount = 0 })
     print("[LootRaffle] Move close to "..playerName.."-"..playerRealmName.." for auto-trading.")
-    SendChatMessage("[LootRaffle] Hey "..winner.playerName"-"winner.realmName" you won!! Move close to me so I can give you "..itemLink..".", "WHISPER", nil, LootRaffle_GetWhisperName(playerName, playerRealmName))
+    SendChatMessage("[LootRaffle] Hey "..winner.playerName.."-"..winner.realmName.." you won!! Move close to me so I can give you "..itemLink..".", "WHISPER", nil, LootRaffle_GetWhisperName(playerName, playerRealmName))
 end
 
 function LootRaffle_TryTradeWinners()
