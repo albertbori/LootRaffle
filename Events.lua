@@ -234,9 +234,11 @@ local function OnTradeOpened(...)
     local bag, slot = LootRaffle_GetTradableItemBagPosition(pendingTrade.itemLink)    
     LootRaffle.Log("Trade opened, presumably for", pendingTrade.itemLink)
 
-    PickupContainerItem(bag, slot)
-    ClickTradeButton(1)
-    -- AcceptTrade() -- Not allowed outside of a secure event
+    -- Use current latency to delay the attempt to move the item to the trade window
+    local down, up, lagHome, lagWorld = GetNetStats();
+    local delay = (lagWorld / 1000) * 2
+    LootRaffle.Log("Delaying for ", delay, " seconds before moving trade item...")
+    C_Timer.After(delay, function() LootRaffle_SelectItemToTrade(bag, slot) end)
 end
 
 local function ProcessTradeAcceptance()

@@ -249,6 +249,13 @@ function LootRaffle_TryTradeWinners()
     InitiateTrade(winnerUnitName)
 end
 
+function LootRaffle_SelectItemToTrade(bag, slot)
+    LootRaffle.Log("Moving ", bag, " bag item in ", slot, " slot to trade window.")
+    PickupContainerItem(bag, slot)
+    ClickTradeButton(1)
+    -- AcceptTrade() -- Not allowed outside of a secure event
+end
+
 -- -------------------------------------------------------------
 -- Recipient Methods
 -- -------------------------------------------------------------
