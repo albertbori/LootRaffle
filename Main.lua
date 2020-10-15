@@ -25,7 +25,8 @@ LootRaffle = {
     RollWindows = {},
     RollWindowsCount = 0,
     TradeWindowIsOpen = false,
-    PlayerAcceptedTrade = false
+    PlayerAcceptedTrade = false,
+    IgnoredItems = {}
 }
 
 -- Add static confirmation dialog
@@ -33,6 +34,7 @@ StaticPopupDialogs["LOOTRAFFLE_PROMPT"] = {
     text = "Would you like to start a raffle for %s?",
     button1 = "Yes",
     button2 = "No",
+    button3 = "Ignore",
     OnAccept = function(self, data)
         LootRaffle.Log("LOOTRAFFLE_PROMPT accepted.")
         LootRaffle_StartRaffle(data.link)
@@ -40,6 +42,11 @@ StaticPopupDialogs["LOOTRAFFLE_PROMPT"] = {
     end,
     OnCancel = function()
         LootRaffle.Log("LOOTRAFFLE_PROMPT canceled.")
+        LootRaffle.PossibleRafflePromptShown = false
+    end,
+    OnAlt = function(self, data)
+        LootRaffle.Log("LOOTRAFFLE_PROMPT ignored.")
+        LootRaffle_IgnoreItem(data.link)
         LootRaffle.PossibleRafflePromptShown = false
     end,
     timeout = LootRaffle.RaffleLengthInSeconds,
@@ -60,7 +67,7 @@ function LootRaffle_TryDetectNewRaffleOpportunity(itemLink, quality, bag, slot)
         return
     end
     -- must be of minimum quality, the owner of the item, in a group of some type, and the item be tradable
-    if quality >= LootRaffle.MinimumQuality and IsInGroup() then
+    if quality >= LootRaffle.MinimumQuality and IsInGroup() and not LootRaffle_FindIgnoredItemIndex(itemLink) then
         LootRaffle.Log("LootRaffle detected new tradable loot: ", itemLink)
         LootRaffle_TryPromptForRaffle(itemLink)
     end
@@ -313,6 +320,54 @@ function LootRaffle_OnRollWindowUpdate(self, elapsed)
 	self:SetValue(left);
 end
 
+
+-- -------------------------------------------------------------
+-- Ignore List Methods
+-- -------------------------------------------------------------
+
+function LootRaffle_FindIgnoredItemIndex(itemLink)
+    for i, listItemLink in ipairs(LootRaffle.IgnoredItems) do
+        if listItemLink == itemLink then            
+            return i
+        end
+    end
+end
+
+function LootRaffle_IgnoreItem(itemLink)
+    local index = LootRaffle_FindIgnoredItemIndex(itemLink)
+    if index and index > 0 then
+        print("[LootRaffle] "..itemLink.." was already in your ignored list.")
+    else
+        table.insert(LootRaffle.IgnoredItems, itemLink)
+        print("[LootRaffle] "..itemLink.." was added to your ignore list. Type '/raffle unignore "..itemLink.."' to remove it from the ignore list.")
+    end
+end
+
+function LootRaffle_UnignoreItem(itemLink)
+    local index = LootRaffle_FindIgnoredItemIndex(itemLink)
+    if index and index > 0 then
+        table.remove(LootRaffle.IgnoredItems, i)
+        print("[LootRaffle] "..itemLink.." was removed from your ignore list. Type '/raffle ignore "..itemLink.."' to add it back to the ignore list.")
+    else
+        print("[LootRaffle] Could not find "..itemLink.." in your ignored list.")
+    end
+end
+
+function LootRaffle_ClearIgnored()
+    local count = #LootRaffle.IgnoredItems
+    LootRaffle.IgnoredItems = {}
+    print("[LootRaffle] "..count.." items removed from your ignore list.")
+end
+
+function LootRaffle_ShowIgnored()
+    if #LootRaffle.IgnoredItems == 0 then
+        print("[LootRaffle] 0 ignored items.")
+    end
+    for i, listItemLink in ipairs(LootRaffle.IgnoredItems) do
+        print("[LootRaffle] Ignored item: "..listItemLink)
+    end
+end
+
 -- -------------------------------------------------------------
 -- Helper Methods
 -- -------------------------------------------------------------
@@ -555,3 +610,4 @@ function LootRaffle_GetWhisperName(playerName, playerRealmName)
     end
     return whisperName
 end
+

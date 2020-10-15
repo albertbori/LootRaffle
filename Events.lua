@@ -21,6 +21,24 @@ function SlashCmdList.LootRaffle(msg, editbox)
     elseif msg == "auto-detect off" then
         LootRaffle.AutoDetectLootedItems = false
         print("[LootRaffle] Automatic raffle prompt disabled.")
+    elseif string.find(msg, "unignore ") then
+        local itemLink = select(2, GetItemInfo(msg))
+        print("[LootRaffle] Unignoring "..itemLink.."...")
+        if itemLink then
+            LootRaffle_UnignoreItem(itemLink)
+        end
+    elseif string.find(msg, "ignore ") then
+        local itemLink = select(2, GetItemInfo(msg))
+        print("[LootRaffle] Ignoring "..itemLink.."...")
+        if itemLink then
+            LootRaffle_IgnoreItem(itemLink)
+        end
+    elseif string.find(msg, "clearignore") then
+        print("[LootRaffle] Clearing ignore list...")
+        LootRaffle_ClearIgnored()
+    elseif string.find(msg, "showignore") then
+        print("[LootRaffle] Showing ignore list...")
+        LootRaffle_ShowIgnored()
     elseif string.find(msg, "test") then
         local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
         print("[LootRaffle] Testing item: "..itemLink)
@@ -51,6 +69,12 @@ function SlashCmdList.LootRaffle(msg, editbox)
             else
                 print("[LootRaffle] "..itemLink.." is NOT usable "..unitName..".")
             end
+        end
+    elseif string.find(msg, "prompt") then
+        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
+        print("[LootRaffle] Testing prompt for item: "..itemLink)
+        if itemLink then
+            LootRaffle_PromptForRaffle(itemLink)
         end
     else
         -- try for item
@@ -87,6 +111,7 @@ local function OnLoad(...)
     LootRaffle.Log("Addon loaded.")
     LootRaffle.LoggingEnabled = LootRaffle_DB.LoggingEnabled or LootRaffle.LoggingEnabled
     LootRaffle.AutoDetectLootedItems = LootRaffle_DB.AutoDetectLootedItems or LootRaffle.AutoDetectLootedItems
+    LootRaffle.IgnoredItems = LootRaffle_DB.IgnoredItems or LootRaffle.IgnoredItems
 end
 
 local function OnUnload(...)
@@ -95,6 +120,7 @@ local function OnUnload(...)
     end
     LootRaffle_DB.LoggingEnabled = LootRaffle.LoggingEnabled
     LootRaffle_DB.AutoDetectLootedItems = LootRaffle.AutoDetectLootedItems
+    LootRaffle_DB.IgnoredItems = LootRaffle.IgnoredItems
 end
 
 local LootedItems = {}
