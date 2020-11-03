@@ -134,6 +134,9 @@ function LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType,
         end
         if not itemLink then
             LootRaffle.Log("No eligible raffles found for whisper roll.")
+            if fromWhisper then
+                SendChatMessage("[LootRaffle] You cannot use that item. Your roll has been discarded.", "WHISPER", nil, LootRaffle_GetWhisperName(playerName, playerRealmName))
+            end
             return
         end
     end
@@ -535,15 +538,24 @@ function LootRaffle_ItemPassesClassRestriction(itemLink, class)
 end
 
 function LootRaffle_ClassCanUseItemStat(itemLink, classCodeName)
-    --if it has strength, agility or int, check for class proficiency match
-    if LootRaffle_SearchItemLinkTooltip(itemLink, { SPELL_STAT1_NAME, SPELL_STAT2_NAME, SPELL_STAT4_NAME }) then
-        local mainStats = LootRaffle_ClassProficiencies[classCodeName]["MainStats"]
-        if LootRaffle_SearchItemLinkTooltip(itemLink, mainStats) then
+    local statsTable = { }
+    GetItemStats(itemLink, statsTable)
+    -- if it has no main stat, it's fair game. (We can't reliably determine on-use effect intention)
+    LootRaffle.Log("Item Strength:", statsTable["ITEM_MOD_STRENGTH_SHORT"], "Agility:", statsTable["ITEM_MOD_AGILITY_SHORT"], "Intellect:", statsTable["ITEM_MOD_INTELLECT_SHORT"])
+    if not statsTable["ITEM_MOD_STRENGTH_SHORT"] and not statsTable["ITEM_MOD_AGILITY_SHORT"] and not statsTable["ITEM_MOD_INTELLECT_SHORT"] then
+        LootRaffle.Log("No main stat found on raffled item. It's fair game to all.")
+        return true
+    end
+    -- if it has a main stat that the class in question can use, it's fair game
+    for i,stat in ipairs(LootRaffle_ClassProficiencies[classCodeName]["MainStats"]) do
+        local statKey = "ITEM_MOD_"..string.upper(stat).."_SHORT"
+        if statsTable[statKey] then
+            LootRaffle.Log(classCodeName, " can use ", stat, ".")
             return true
         end
-        return false
     end
-    return true
+    LootRaffle.Log(classCodeName, " specs cannot use main stat on item.")
+    return false
 end
 
 function LootRaffle_ClassCanUseRelic(itemLink, classCodeName)
@@ -575,6 +587,7 @@ function LootRaffle_SearchItemLinkTooltip(itemLink, patterns)
 end
 
 function LootRaffle_SearchTooltip(patterns)
+    LootRaffle.Log("Searching item tooltip for texts: ", patterns)
     parseItemTooltip:Show()
     for i = 1,parseItemTooltip:NumLines() do
         local tooltipLine = _G["LootRaffle_ParseItemTooltipTextLeft"..i]
@@ -583,11 +596,13 @@ function LootRaffle_SearchTooltip(patterns)
             if (type(patterns) == "table") then
                 for x,pattern in ipairs(patterns) do
                     if text and (text == pattern or string.find(text, pattern)) then
+                        LootRaffle.Log("Search found '", pattern, "' in '", text, "'")
                         return true
                     end
                 end
             else
                 if text and (text == patterns or string.find(text, patterns)) then
+                    LootRaffle.Log("Search found '", patterns, "' in '", text, "'")
                     return true
                 end
             end
@@ -596,6 +611,7 @@ function LootRaffle_SearchTooltip(patterns)
         end
     end
     parseItemTooltip:Hide()
+    LootRaffle.Log("Search found no results.")
     return false
 end
 

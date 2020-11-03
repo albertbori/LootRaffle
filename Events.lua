@@ -81,9 +81,13 @@ function SlashCmdList.LootRaffle(msg, editbox)
         local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(msg)
         if not name then
             print("LootRaffle commands:"); 
-            print(" - '[Item Link]]': Starts a raffle");
+            print(" - '[Item Link]': Starts a raffle");
             print(" - 'logging (on|off)': Toggles logging");
             print(" - 'auto-detect (on|off)': Toggles Automatic raffle prompt when you loot a tradable item.");
+            print(" - 'ignore [Item Link]': Adds [Item Link] to your ignore list. Ignored items won't prompt you to start a raffle.");
+            print(" - 'unignore [Item Link]': Removes [Item Link] from your ignore list.");
+            print(" - 'showignore': Prints out your ignore list.");
+            print(" - 'clearignore': Clears the ignore list.");
             return
         end
 
