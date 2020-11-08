@@ -36,6 +36,7 @@ end
 
 function LootRaffle_Notification_ParseRaffleStart(message)
     local rafflerName, raffleId, itemLink = string.split("^", message)
+    return rafflerName, raffleId, itemLink
 end
 
 function LootRaffle_Notification_SendRoll(itemLink, rafflerName, raffleId, rollType)

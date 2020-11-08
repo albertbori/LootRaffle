@@ -8,8 +8,8 @@ function LootRaffle_HandleNewRaffleNotification(itemLink, rafflerName, raffleId)
     LootRaffle_ShowRollWindow(itemLink, rafflerName, raffleId)
 end
 
-function LootRaffle_ShowRollWindow(itemLink, rafflerNam, raffleId)
-    LootRaffle.Log("Showing roll window...")
+function LootRaffle_ShowRollWindow(itemLink, rafflerName, raffleId)
+    LootRaffle.Log("Showing roll window for ", itemLink, rafflerName, raffleId, "...")
     local name, link, quality, itemLevel, requiredLevel, itemClass, itemSubClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemLink)
 
     local rollWindow = CreateFrame("Frame", "LootRaffle_RollWindow_" .. (LootRaffle.RollWindowsCount + 1), LootRaffle_Frame, "LootRaffle_RollWindowTemplate")
@@ -33,7 +33,7 @@ function LootRaffle_Roll(self, rollType)
     local parent = self:GetParent()
     parent:Hide()
     LootRaffle.RollWindowsCount = LootRaffle.RollWindowsCount - 1
-    LootRaffle.Log("LootRaffle_Roll(", parent.data.rafflerName, ",", parent.data.playerRealmName, ",", rollType, ")")
+    LootRaffle.Log("LootRaffle_Roll(", parent.data.rafflerName, ", raffleId: ", parent.data.raffleId, ",", rollType, ")")
     LootRaffle_Notification_SendRoll(parent.data.itemLink, parent.data.rafflerName, parent.data.raffleId, rollType)
 end
 

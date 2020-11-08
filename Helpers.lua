@@ -29,7 +29,7 @@ function LootRaffle_GetUnitNameFromPlayerName(fullName)
     elseif IsInGroup() then
         local partyRoster = GetHomePartyInfo()
         for i, name in ipairs(partyRoster) do
-            local unitFullName = UnitFullName("party"..i)
+            local unitFullName = LootRaffle_UnitFullName("party"..i)
             if unitFullName == fullName then
                 LootRaffle.Log("Unit name for ", name, realmName, "is", "party"..i)
                 return "party"..i

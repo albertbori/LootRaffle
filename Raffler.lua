@@ -53,7 +53,8 @@ function LootRaffle_StartRaffle(itemLink)
         raffle.RollerCounts[rollType] = 0
         raffle.Rollers[rollType] = {}
     end
-    LootRaffle.MyRaffles[tostring(LootRaffle.MyRafflesCount + 1)] = raffle
+    local raffleId = tostring(LootRaffle.MyRafflesCount + 1)
+    LootRaffle.MyRaffles[raffleId] = raffle
     LootRaffle.MyRafflesCount = LootRaffle.MyRafflesCount + 1
     LootRaffle_Notification_SendRaffleStart(itemLink, raffleId)
     SendChatMessage("[LootRaffle] whisper me \"NEED\", \"GREED\" or \"XMOG\" if you want "..itemLink.." within the next "..LootRaffle_GetRaffleLengthInSeconds().." seconds.", LootRaffle_GetCurrentChannelName())
@@ -64,6 +65,7 @@ function LootRaffle_HandleRollNotification(raffleId, rollerName, rollType)
     local raffle = LootRaffle.MyRaffles[raffleId]
     if not raffle then
         LootRaffle.Log("Could not find raffle for id:", raffleId)
+        return
     end
     LootRaffle_ReceiveRoll(raffle, rollerName, rollerUnitName, rollType)
 end
@@ -123,7 +125,7 @@ end
 function LootRaffle_CheckRollStatus()
     if LootRaffle.MyRafflesCount == 0 then return end
     -- LootRaffle.Log("Checking roll timeout status...")
-    for _,id in LootRaffle.MyRaffles do
+    for _,id in ipairs(LootRaffle.MyRaffles) do
         local raffle = LootRaffle.MyRaffles[id]
         local secondsLapsed = LootRaffle.CurrentTimeInSeconds - raffle.timeInSeconds
         if secondsLapsed > LootRaffle_GetRaffleLengthInSeconds() then
