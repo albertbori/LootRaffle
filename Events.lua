@@ -205,59 +205,57 @@ local function OnMessageRecieved(prefix, message)
     if prefix ~= LootRaffle.NEW_RAFFLE_MESSAGE and prefix ~= LootRaffle.ROLL_ON_ITEM_MESSAGE then return end
     
     LootRaffle.Log("Addon message received: ", prefix, " | ", message)
-    local playerName, playerRealmName, itemLink, rollType = string.split("^", message)
-    if prefix == LootRaffle.NEW_RAFFLE_MESSAGE and playerName ~= UnitName('player') then
-        LootRaffle.Log("New raffle message recieved from: ", playerName, "-", playerRealmName, " for: ", itemLink)
+    if prefix == LootRaffle.NEW_RAFFLE_MESSAGE then
+        if rafflerName == LootRaffle_UnitFullName("player") then return end
+        local rafflerName, raffleId, itemLink = LootRaffle_Notification_ParseRaffleStart(message)
+        LootRaffle.Log("New raffle message recieved from: ", rafflerName, " for: ", itemLink)
         local name = GetItemInfo(itemLink)
         if name then
-            LootRaffle_ShowRollWindow(itemLink, playerName, playerRealmName)
+            LootRaffle_HandleNewRaffleNotification(itemLink, rafflerName, raffleId)
         else
             LootRaffle.Log("No item data found for "..itemLink..". Waiting for async result...")
-            -- no data, queue for async item info result
-            table.insert(LootRaffle.IncomingRaffleItemInfoRequests, { itemLink = itemLink, playerName = playerName, playerRealmName = playerRealmName })
-            LootRaffle.IncomingRaffleItemInfoRequestCount = LootRaffle.IncomingRaffleItemInfoRequestCount + 1
+            if not LootRaffle.ItemRequests[itemLink] then LootRaffle.ItemRequests[itemLink] = {} end
+            table.insert(LootRaffle.ItemRequests[itemLink], function() LootRaffle_HandleNewRaffleNotification(itemLink, rafflerName, raffleId) end)
         end
-    elseif prefix == LootRaffle.ROLL_ON_ITEM_MESSAGE and playerName ~= UnitName('player') then
-        LootRaffle.Log("Roll message recieved from: ", playerName, "-", playerRealmName, " for: ", itemLink)
-        LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType)
+    elseif prefix == LootRaffle.ROLL_ON_ITEM_MESSAGE then
+        if rafflerName == LootRaffle_UnitFullName("player") then return end        
+        local rafflerName, raffleId, itemLink, rollerName, rollType = LootRaffle_Notification_ParseRoll(message)
+        LootRaffle.Log("Roll message recieved from:", rollerName, rollType, "for:", itemLink)
+        LootRaffle_HandleRollNotification(raffleId, rollerName, rollType)
     end
 end
 
 local function OnWhisperReceived(msg, author, language, status, msgid, unknown, lineId, senderGuid)
-    if LootRaffle.MyRaffledItemsCount == 0 then return end
+    if LootRaffle.MyRafflesCount == 0 then return end
 
     local searchableMessage = string.lower(msg)
-    local isNeedRoll = string.find(searchableMessage, "need") ~= nil
-    local isGreedRoll = string.find(searchableMessage, "greed") ~= nil
-    local isXmogRoll = string.find(searchableMessage, "xmog") ~= nil or string.find(searchableMessage, "disenchant") ~= nil
+    local isNeedRoll = string.match(searchableMessage, "need")
+    local isGreedRoll = string.match(searchableMessage, "greed")
+    local isXmogRoll = string.match(searchableMessage, "xmog") or string.match(searchableMessage, "disenchant")
 
     local rollType = nil
-    if isNeedRoll then rollType = "NEED"
-    elseif isGreedRoll then rollType = "GREED"
-    elseif isXmogRoll then rollType = "DE" end
+    if isNeedRoll then rollType = LOOTRAFFLE_ROLL_NEED
+    elseif isGreedRoll then rollType = LOOTRAFFLE_ROLL_GREED
+    elseif isXmogRoll then rollType = LOOTRAFFLE_ROLL_DE end
 
     if not rollType then return end
 
     local playerName, playerRealmName = string.split("-", author, 2)
+    playerRealmName = playerRealmName or string.gsub(GetRealmName(), "%s+", "")
     -- try for item
     local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(msg)
     LootRaffle.Log("Discovered ", rollType, " whisper roll from ", playerName, playerRealmName, "for item", itemLink)
-    LootRaffle_ReceiveRoll(itemLink, playerName, playerRealmName, rollType, true) -- we don't know what priority people without the addon are rolling. default to need.
+    LootRaffle_HandleRollWhisper(itemLink, rollerName, rollType)
 end
 
 local function OnItemInfoRecieved(itemId)
-    -- if there are any async item info requests for incoming raffles, process them and try to show a roll window
-    if LootRaffle.IncomingRaffleItemInfoRequestCount > 0 then
-        local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemId)
-        LootRaffle.Log("Async item info request completed for incoming raffle"..itemLink)
-        for i,raffle in ipairs(LootRaffle.IncomingRaffleItemInfoRequests) do
-            if raffle.itemLink == itemLink or string.find(raffle.itemLink, LootRaffle_EscapePatternCharacters(name)) then
-                table.remove(LootRaffle.IncomingRaffleItemInfoRequests, i)
-                LootRaffle.IncomingRaffleItemInfoRequestCount = LootRaffle.IncomingRaffleItemInfoRequestCount - 1
-                LootRaffle_ShowRollWindow(raffle.itemLink, raffle.playerName, raffle.playerRealmName)
-                break
-            end
+    local _, itemLink = GetItemInfo(itemId)
+    if LootRaffle.ItemRequests and LootRaffle.ItemRequests[itemLink] then
+        LootRaffle.Log("Async item info request completed for "..itemLink)
+        for _,callback in pairs(LootRaffle.ItemRequests[itemLink]) do
+            callback()
         end
+        LootRaffle.ItemRequests[itemLink] = {}
     end
 end
 

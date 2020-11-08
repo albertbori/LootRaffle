@@ -12,9 +12,7 @@ function LootRaffle_GetCurrentChannelName()
     end
 end
 
-function LootRaffle_GetUnitNameFromPlayerName(playerName, playerRealmName)
-    local sameRealm = select(2, UnitFullName("player")) == playerRealmName -- unit full name sometimes returns nil for other players on the same realm
-
+function LootRaffle_GetUnitNameFromPlayerName(fullName)
     if IsInRaid() or IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
         local groupPrefix = "party"
         if IsInRaid() then
@@ -22,8 +20,8 @@ function LootRaffle_GetUnitNameFromPlayerName(playerName, playerRealmName)
         end
         local raidMemberCount = GetNumGroupMembers()
         for i = 1, raidMemberCount do
-            local name, realmName = UnitFullName(groupPrefix..i)
-            if playerName == name and (sameRealm or playerRealmName == realmName) then
+            local unitFullName = LootRaffle_UnitFullName(groupPrefix..i)
+            if unitFullName == fullName then
                 LootRaffle.Log("Unit name for ", name, realmName, "is", groupPrefix..i)
                 return groupPrefix..i
             end
@@ -31,8 +29,8 @@ function LootRaffle_GetUnitNameFromPlayerName(playerName, playerRealmName)
     elseif IsInGroup() then
         local partyRoster = GetHomePartyInfo()
         for i, name in ipairs(partyRoster) do
-            local name, realmName = UnitFullName("party"..i)
-            if playerName == name and (sameRealm or playerRealmName == realmName) then
+            local unitFullName = UnitFullName("party"..i)
+            if unitFullName == fullName then
                 LootRaffle.Log("Unit name for ", name, realmName, "is", "party"..i)
                 return "party"..i
             end
@@ -60,14 +58,6 @@ function LootRaffle_GetRaffleLengthInSeconds()
     else
         return LootRaffle.RaffleLengthInSeconds
     end
-end
-
-function LootRaffle_GetWhisperName(playerName, playerRealmName)
-    local whisperName = playerName
-    if playerRealmName then
-        whisperName = whisperName.."-"..playerRealmName
-    end
-    return whisperName
 end
 
 function LootRaffle_TableContains(table, element)
@@ -102,5 +92,24 @@ function LootRaffle_Dump(o, level)
         return '"'..o..'"'
     else
         return tostring(o)
+    end
+end
+
+function LootRaffle_UnitFullName(unit)    
+    local playerName, playerRealmName = UnitFullName('player')
+    local fullName = strjoin("-", playerName, playerRealmName or string.gsub(GetRealmName(), "%s+", ""))
+    return fullName
+end
+
+function LootRaffle_LoadItemAsync(itemLink, completion)
+    local name = GetItemInfo(itemLink)
+    if name then
+        completion(itemLink)
+    else
+        -- Use current latency to delay the attempt to get the item info
+        local down, up, lagHome, lagWorld = GetNetStats();
+        local delay = (lagWorld / 1000) * 2
+        LootRaffle.Log("Delaying LootRaffle_LoadItemAsync("..itemLink..") for ", delay, "seconds...")
+        C_Timer.After(delay, function() LootRaffle_LoadItemAsync(itemLink, completion) end)
     end
 end

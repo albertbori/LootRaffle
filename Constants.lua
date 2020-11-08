@@ -11,6 +11,11 @@ LootRaffle_ItemQuality = {
     Heirloom = 7
 }
 
+LOOTRAFFLE_ROLL_NEED = "NEED"
+LOOTRAFFLE_ROLL_GREED = "GREED"
+LOOTRAFFLE_ROLL_DE = "DE"
+LOOTRAFFLE_ROLL_PASS = "PASS"
+
 LootRaffle_ROLLTYPES = { "NEED", "GREED", "DE", "PASS" }
 
 LootRaffle_ROLLTYPES_STRINGS = {

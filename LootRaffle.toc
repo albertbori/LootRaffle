@@ -10,5 +10,7 @@ Helpers.lua
 ItemFunctions.lua
 Ignore.lua
 Main.lua
+Raffler.lua
+Roller.lua
 LootRaffle.xml
 Events.lua
