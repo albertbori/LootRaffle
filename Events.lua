@@ -17,7 +17,9 @@ function SlashCmdList.LootRaffle(msg, editbox)
             end
             print("--")
             local itemInfo = LootRaffle_GetItemInfo(itemLink)
-            print(dump(itemInfo))
+            for match in string.gmatch(LootRaffle_Dump(itemInfo), "[^\n]+") do
+                print(match)
+            end
         end
     elseif msg == "reset" then
         -- LootRaffle_ResetSizeAndPosition();

@@ -6,6 +6,7 @@
 
 Constants.lua
 State.lua
+Helpers.lua
 ItemFunctions.lua
 Ignore.lua
 Main.lua
