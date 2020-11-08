@@ -7,6 +7,18 @@ function SlashCmdList.LootRaffle(msg, editbox)
         -- LootRaffle_Frame:Show();
     elseif msg == "hide" then
         -- LootRaffle_Frame:Hide();
+    elseif string.find(msg, "^data") then
+        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
+        if itemLink then
+            local cool = LootRaffle_GetItemTooltipTableByItemLink(itemLink)
+            print("--", itemLink, "--")
+            for neat in pairs(cool) do
+                print(cool[neat])
+            end
+            print("--")
+            local itemInfo = LootRaffle_GetItemInfo(itemLink)
+            print(dump(itemInfo))
+        end
     elseif msg == "reset" then
         -- LootRaffle_ResetSizeAndPosition();
     elseif msg == "logging on" then

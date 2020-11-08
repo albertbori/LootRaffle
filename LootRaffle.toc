@@ -5,6 +5,9 @@
 ## SavedVariables: LootRaffle_DB
 
 Constants.lua
+State.lua
+ItemFunctions.lua
+Ignore.lua
 Main.lua
 LootRaffle.xml
 Events.lua

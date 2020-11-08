@@ -93,3 +93,26 @@ LootRaffle_ClassProficiencies["WARRIOR"] = {
     Weapon = { "One-Handed Axes", "Daggers", "Fist Weapons", "One-Handed Maces", "Polearms", "Staves", "One-Handed Swords", "Two-Handed Axes", "Two-Handed Maces", "Two-Handed Swords" },
     Relics = { RELIC_SLOT_TYPE_BLOOD, RELIC_SLOT_TYPE_IRON, RELIC_SLOT_TYPE_SHADOW, RELIC_SLOT_TYPE_FIRE, RELIC_SLOT_TYPE_WIND }
 }
+
+LootRaffle_TooltipStatNames = {
+    SPELL_STAT1_NAME, -- Strength
+    SPELL_STAT2_NAME, -- Agility
+    SPELL_STAT3_NAME, -- Stamina
+    SPELL_STAT4_NAME, -- Intellect
+    STAT_HASTE,
+    STAT_CRITICAL_STRIKE,
+    STAT_MASTERY
+}
+
+function dump(o)
+    if type(o) == 'table' then
+       local s = '{ '
+       for k,v in pairs(o) do
+          if type(k) ~= 'number' then k = '"'..k..'"' end
+          s = s .. '['..k..'] = ' .. dump(v) .. ','
+       end
+       return s .. '} '
+    else
+       return tostring(o)
+    end
+ end
