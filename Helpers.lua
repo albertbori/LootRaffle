@@ -36,6 +36,7 @@ function LootRaffle_GetUnitNameFromPlayerName(fullName)
             end
         end
     end
+    LootRaffle.Log("Could not find unit name from player name", fullName)
     return nil
 end
 
@@ -96,7 +97,7 @@ function LootRaffle_Dump(o, level)
 end
 
 function LootRaffle_UnitFullName(unit)    
-    local playerName, playerRealmName = UnitFullName('player')
+    local playerName, playerRealmName = UnitFullName(unit)
     local fullName = strjoin("-", playerName, playerRealmName or string.gsub(GetRealmName(), "%s+", ""))
     return fullName
 end

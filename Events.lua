@@ -206,8 +206,8 @@ local function OnMessageRecieved(prefix, message)
     
     LootRaffle.Log("Addon message received: ", prefix, " | ", message)
     if prefix == LootRaffle.NEW_RAFFLE_MESSAGE then
-        if rafflerName == LootRaffle_UnitFullName("player") then return end
         local rafflerName, raffleId, itemLink = LootRaffle_Notification_ParseRaffleStart(message)
+        if rafflerName == LootRaffle_UnitFullName("player") then return end
         LootRaffle.Log("New raffle message recieved from: ", rafflerName, " for id:", raffleId, "item: ", itemLink)
         local name = GetItemInfo(itemLink)
         if name then
@@ -218,8 +218,8 @@ local function OnMessageRecieved(prefix, message)
             table.insert(LootRaffle.ItemRequests[itemLink], function() LootRaffle_HandleNewRaffleNotification(itemLink, rafflerName, raffleId) end)
         end
     elseif prefix == LootRaffle.ROLL_ON_ITEM_MESSAGE then
-        if rafflerName == LootRaffle_UnitFullName("player") then return end        
         local rafflerName, raffleId, itemLink, rollerName, rollType = LootRaffle_Notification_ParseRoll(message)
+        if rafflerName ~= LootRaffle_UnitFullName("player") then return end
         LootRaffle.Log("Roll message recieved from:", rollerName, rollType, "for:", itemLink)
         LootRaffle_HandleRollNotification(raffleId, rollerName, rollType)
     end

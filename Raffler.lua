@@ -53,7 +53,8 @@ function LootRaffle_StartRaffle(itemLink)
         raffle.RollerCounts[rollType] = 0
         raffle.Rollers[rollType] = {}
     end
-    local raffleId = tostring(LootRaffle.MyRafflesCount + 1)
+    local raffleId = tostring(100 + LootRaffle.MyRafflesCount + 1)
+    raffle.id = raffleId
     LootRaffle.MyRaffles[raffleId] = raffle
     LootRaffle.MyRafflesCount = LootRaffle.MyRafflesCount + 1
     LootRaffle_Notification_SendRaffleStart(itemLink, raffleId)
@@ -74,7 +75,7 @@ function LootRaffle_HandleRollWhisper(itemLink, rollerName, rollType)
     local rollerUnitName = LootRaffle_GetUnitNameFromPlayerName(rollerName)
     local raffle = nil
     if not itemLink then -- if we don't know which item the player was rolling on, pick the first usable item
-        for i,id in ipairs(LootRaffle.MyRaffles) do
+        for id in pairs(LootRaffle.MyRaffles) do
             if LootRaffle_UnitCanUseItem(rollerUnitName, LootRaffle.MyRaffles[id].itemLink) then
                 raffle = LootRaffle.MyRaffles[id]
                 LootRaffle.Log("Roll received didn't contain an item link. Assigned:", raffle.itemLink)
@@ -87,7 +88,7 @@ function LootRaffle_HandleRollWhisper(itemLink, rollerName, rollType)
             return
         end
     else
-        for i,id in ipairs(LootRaffle.MyRaffles) do
+        for id in pairs(LootRaffle.MyRaffles) do
             if LootRaffle.MyRaffles[id].itemLink == itemLink then
                 raffle = LootRaffle.MyRaffles[id]
                 LootRaffle.Log("Found roll id:", id, "from item link:", itemLink)
@@ -119,20 +120,27 @@ function LootRaffle_ReceiveRoll(raffle, rollerName, rollerUnitName, rollType)
     raffle.Rollers[rollType][rollerName] = true
     raffle.RollerCounts[rollType] = raffle.RollerCounts[rollType] + 1
     raffle.ResponderCount = raffle.ResponderCount + 1
+    LootRaffle.Log("Roll count for", rollType, ":", raffle.RollerCounts[rollType])
+    local rollers = {}
+    for roller in pairs(raffle.Rollers[rollType]) do
+        table.insert(rollers, roller)
+    end
+    LootRaffle.Log("Roll list for", rollType, ":", table.concat(rollers, ", "))
+    LootRaffle.Log("Responder count", raffle.ResponderCount)
     return true
 end
 
 function LootRaffle_CheckRollStatus()
     if LootRaffle.MyRafflesCount == 0 then return end
-    -- LootRaffle.Log("Checking roll timeout status...")
-    for _,id in ipairs(LootRaffle.MyRaffles) do
+    --LootRaffle.Log("Checking roll timeout status...")
+    for id in pairs(LootRaffle.MyRaffles) do
         local raffle = LootRaffle.MyRaffles[id]
         local secondsLapsed = LootRaffle.CurrentTimeInSeconds - raffle.timeInSeconds
         if secondsLapsed > LootRaffle_GetRaffleLengthInSeconds() then
             LootRaffle.Log("Raffle time limit reached. Ending raffle...")
             LootRaffle_EndRaffle(raffle)
         end
-        if raffle.ResponderCount >= raffle.GroupSize then
+        if raffle.ResponderCount >= raffle.GroupSize then -- if the entire group size (minus the raffler) has rolled, end the raffle early
             LootRaffle.Log("All responders responded. Ending raffle...")
             LootRaffle_EndRaffle(raffle)
         end
@@ -141,19 +149,19 @@ end
 
 function LootRaffle_EndRaffle(raffle)
     LootRaffle.Log("LootRaffle_EndRaffle(", raffle.itemLink, ")")
-    for i,id in ipairs(LootRaffle.MyRaffles) do
-        local raffle = LootRaffle.MyRaffles[id]
-        if raffle.itemLink == raffle.itemLink then
-            table.remove(LootRaffle.MyRaffles, i)
-        end
-    end
-
+    LootRaffle.MyRaffles[raffle.id] = nil --TODO does this get removed?
     LootRaffle.MyRafflesCount = LootRaffle.MyRafflesCount - 1
     for i,rollType in ipairs(LootRaffle_ROLLTYPES) do
-        if rollType ~= "PASS" and raffle.RollerCounts[rollType] > 0 then
-            local winner = raffle.Rollers[rollType][math.random(raffle.RollerCounts[rollType])]
-            SendChatMessage("[LootRaffle] "..winner.rollerName.." has won "..raffle.itemLink..".", LootRaffle_GetCurrentChannelName())
-            LootRaffle_AwardItem(raffle.itemLink, winner.rollerName)
+        LootRaffle.Log(rollType, "roller count:", raffle.RollerCounts[rollType])
+        if rollType ~= LOOTRAFFLE_ROLL_PASS and raffle.RollerCounts[rollType] > 0 then
+            local rollers = {}
+            for roller in pairs(raffle.Rollers[rollType]) do
+                table.insert(rollers, roller)
+            end
+            LootRaffle.Log("Final roll list for ", rollType, ":", table.concat(rollers, ","))
+            local winner = rollers[math.random(raffle.RollerCounts[rollType])]
+            SendChatMessage("[LootRaffle] "..winner.." has won "..raffle.itemLink..".", LootRaffle_GetCurrentChannelName())
+            LootRaffle_AwardItem(raffle.itemLink, winner)
             return
         end
     end
