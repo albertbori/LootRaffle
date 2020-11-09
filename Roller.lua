@@ -2,7 +2,7 @@ local _, LootRaffle_Local=...
 
 function LootRaffle_HandleNewRaffleNotification(itemLink, rafflerName, raffleId)
     if not LootRaffle_UnitCanUseItem("player", itemLink) then
-        LootRaffle_Notification.SendRoll(itemLink, rafflerName, raffleId, LOOTRAFFLE_ROLL_PASS)
+        LootRaffle_Notification_SendRoll(itemLink, rafflerName, raffleId, LOOTRAFFLE_ROLL_PASS)
         return
     end
     LootRaffle_ShowRollWindow(itemLink, rafflerName, raffleId)

@@ -97,7 +97,7 @@ function LootRaffle_HandleRollWhisper(itemLink, rollerName, rollType)
         end
     end
     if raffle and LootRaffle_ReceiveRoll(raffle, rollerName, rollerUnitName, rollType, true) then
-        SendChatMessage("[LootRaffle] Your request to roll on "..itemLink.." has been received.", "WHISPER", nil, rollerName)
+        SendChatMessage("[LootRaffle] Your request to roll on "..raffle.itemLink.." has been received.", "WHISPER", nil, rollerName)
     end
 end
 

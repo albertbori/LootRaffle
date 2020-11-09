@@ -242,15 +242,16 @@ local function OnWhisperReceived(msg, author, language, status, msgid, unknown, 
 
     local playerName, playerRealmName = string.split("-", author, 2)
     playerRealmName = playerRealmName or string.gsub(GetRealmName(), "%s+", "")
+    local rollerName = playerName.."-"..playerRealmName
     -- try for item
     local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(msg)
-    LootRaffle.Log("Discovered ", rollType, " whisper roll from ", playerName, playerRealmName, "for item", itemLink)
+    LootRaffle.Log("Discovered ", rollType, " whisper roll from ", rollerName, "for item", itemLink)
     LootRaffle_HandleRollWhisper(itemLink, rollerName, rollType)
 end
 
 local function OnItemInfoRecieved(itemId)
     local _, itemLink = GetItemInfo(itemId)
-    if LootRaffle.ItemRequests and LootRaffle.ItemRequests[itemLink] then
+    if LootRaffle.ItemRequests[itemLink] then
         LootRaffle.Log("Async item info request completed for "..itemLink)
         for _,callback in pairs(LootRaffle.ItemRequests[itemLink]) do
             callback()

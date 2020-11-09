@@ -27,5 +27,6 @@ LootRaffle = {
     TradeWindowIsOpen = false,
     PlayerAcceptedTrade = false,
     IgnoredItems = {},
-    ItemInfoCache = {}
+    ItemInfoCache = {},
+    ItemRequests = {}
 }
