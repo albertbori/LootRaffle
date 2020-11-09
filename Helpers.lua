@@ -114,3 +114,7 @@ function LootRaffle_LoadItemAsync(itemLink, completion)
         C_Timer.After(delay, function() LootRaffle_LoadItemAsync(itemLink, completion) end)
     end
 end
+
+function LootRaffle_GetItemNameFromLink(itemLink)
+    return string.match(itemLink, "\124h(%[.-%])\124")
+end

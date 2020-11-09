@@ -10,10 +10,10 @@ function SlashCmdList.LootRaffle(msg, editbox)
     elseif string.find(msg, "^data") then
         local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
         if itemLink then
-            local cool = LootRaffle_GetItemTooltipTableByItemLink(itemLink)
+            local tooltipData = LootRaffle_GetItemTooltipTableByItemLink(itemLink)
             print("--", itemLink, "--")
-            for neat in pairs(cool) do
-                print(cool[neat])
+            for line in pairs(tooltipData) do
+                print(tooltipData[line])
             end
             print("--")
             local itemInfo = LootRaffle_GetItemInfo(itemLink)
@@ -214,8 +214,9 @@ local function OnMessageRecieved(prefix, message)
             LootRaffle_HandleNewRaffleNotification(itemLink, rafflerName, raffleId)
         else
             LootRaffle.Log("No item data found for "..itemLink..". Waiting for async result...")
-            if not LootRaffle.ItemRequests[itemLink] then LootRaffle.ItemRequests[itemLink] = {} end
-            table.insert(LootRaffle.ItemRequests[itemLink], function() LootRaffle_HandleNewRaffleNotification(itemLink, rafflerName, raffleId) end)
+            local deadLink = LootRaffle_GetItemNameFromLink(itemLink) -- this item link is incomplete and cannot be used to match. So, we pull the name out and use that.
+            if not LootRaffle.ItemRequests[deadLink] then LootRaffle.ItemRequests[deadLink] = {} end
+            table.insert(LootRaffle.ItemRequests[deadLink], function(updatedItemLink) LootRaffle_HandleNewRaffleNotification(updatedItemLink, rafflerName, raffleId) end)
         end
     elseif prefix == LootRaffle.ROLL_ON_ITEM_MESSAGE then
         local rafflerName, raffleId, itemLink, rollerName, rollType = LootRaffle_Notification_ParseRoll(message)
@@ -250,13 +251,15 @@ local function OnWhisperReceived(msg, author, language, status, msgid, unknown, 
 end
 
 local function OnItemInfoRecieved(itemId)
-    local _, itemLink = GetItemInfo(itemId)
-    if LootRaffle.ItemRequests[itemLink] then
+    local name, itemLink = GetItemInfo(itemId)
+    if not itemLink then return end
+    local deadLink = LootRaffle_GetItemNameFromLink(itemLink)
+    if LootRaffle.ItemRequests[deadLink] then
         LootRaffle.Log("Async item info request completed for "..itemLink)
-        for _,callback in pairs(LootRaffle.ItemRequests[itemLink]) do
-            callback()
+        for i in ipairs(LootRaffle.ItemRequests[deadLink]) do
+            LootRaffle.ItemRequests[deadLink][i](itemLink)
         end
-        LootRaffle.ItemRequests[itemLink] = {}
+        LootRaffle.ItemRequests[deadLink] = {}
     end
 end
 
