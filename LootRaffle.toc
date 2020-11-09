@@ -1,10 +1,16 @@
 ## Interface: 90001
 ## Title: LootRaffle
 ## Author: Taunkah - Doomhammer
-## Version: 1.0.9
+## Version: 1.2
 ## SavedVariables: LootRaffle_DB
 
 Constants.lua
+State.lua
+Helpers.lua
+ItemFunctions.lua
+Ignore.lua
 Main.lua
+Raffler.lua
+Roller.lua
 LootRaffle.xml
 Events.lua
