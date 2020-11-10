@@ -320,6 +320,5 @@ end
 
 local f = CreateFrame("frame")
 f:SetScript("OnUpdate", OnUpdate)
--- LootRaffle_Frame:SetScript("OnUpdate", OnUpdate)
 
 

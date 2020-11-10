@@ -12,19 +12,19 @@ function LootRaffle_ProcessLootedItem(itemParam, attempt)
     local name, itemLink, quality = GetItemInfo(itemParam)
     if not name then
         LootRaffle.Log("Item info not yet available for:", itemLink)
-        LootRaffle_AsyncProcessLootedItem(itemParam, attempt)
+        LootRaffle_WaitToProcessLootedItem(itemParam, attempt)
     end
 
     local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
     if not bag or not slot then
         LootRaffle.Log("Bag and slot not yet available for:", itemLink)
-        LootRaffle_AsyncProcessLootedItem(itemParam, attempt)
+        LootRaffle_WaitToProcessLootedItem(itemParam, attempt)
     end
 
     LootRaffle_TryDetectNewRaffleOpportunity(itemLink, quality, bag, slot)
 end
 
-function LootRaffle_AsyncProcessLootedItem(itemParam, attempt)
+function LootRaffle_WaitToProcessLootedItem(itemParam, attempt)
     -- Use current latency to delay
     local down, up, lagHome, lagWorld = GetNetStats();
     local delay = (lagWorld / 1000) * 2
