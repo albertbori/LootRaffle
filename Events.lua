@@ -141,64 +141,15 @@ local function OnUnload(...)
     LootRaffle_DB.IgnoredItems = LootRaffle.IgnoredItems
 end
 
-local LootedItems = {}
-local LootedItemsCount = 0
-local function OnItemLooted(message, sender, language, channelString, target, flags, unknown, channelNumber, channelName, unknown, counter)
-    local formattedPlayerName = select(1,UnitName("player")) .. "-" .. GetRealmName()
-    LootRaffle.Log("Looted item detected for target: ", target, " | in a group: ", IsInGroup(), " | detect enabled: ", LootRaffle.AutoDetectLootedItems, " | current player: ", formattedPlayerName)    
-    if target ~= formattedPlayerName or not IsInGroup() or LootRaffle.AutoDetectLootedItems == false then return end
+local function OnItemLooted(lootMessage, sender, language, channelString, targetName, flags, unknown, channelNumber, channelName, unknown, counter)
+    local playerName = LootRaffle_UnitFullName("player")
+    if playerName ~= targetName then return end
+    LootRaffle.Log("Looted item detected for ", playerName, "lootMessage:", lootMessage, "auto-detect:", LootRaffle.AutoDetectLootedItems, "grouped:", IsInGroup())
+    if not LootRaffle.AutoDetectLootedItems then return end
+    if not IsInGroup() then return end
     local instanceType = select(2, IsInInstance())
     if instanceType ~= "party" and instanceType ~= "raid" then return end
-
-    LootRaffle.Log("Queuing looted item:", message)
-    table.insert(LootedItems, { message = message, tries = 0 })
-    LootedItemsCount = LootedItemsCount + 1
-end
-
-local isLootWindowOpen = false
-local function OnLootWindowOpen()
-    isLootWindowOpen = true
-    LootRaffle.Log("Loot window opened.")
-end
-
-local function OnLootWindowClose()
-    if isLootWindowOpen == true then
-        isLootWindowOpen = false
-        LootRaffle.Log("Loot window closed.")
-    end
-end
-
-local function ProcessLootedItems()
-    -- attempt to find the item info and slot info of each looted item
-    if not isLootWindowOpen and LootedItemsCount > 0 then
-        LootRaffle.Log("Processing", LootedItemsCount, "looted items...")
-        for i = LootedItemsCount, 1, -1 do
-            local itemData = LootedItems[i]
-            -- print("message:", itemData.message, "| tries:", itemData.tries)
-            local name, link, quality, itemLevel, requiredLevel, itemClass, itemSubClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemData.message)
-            if itemData.tries >= 5 then --max 5 retries to find the item data
-                LootRaffle.Log("Max loot processing retries for item:", link)
-                table.remove(LootedItems, i)
-                LootedItemsCount = LootedItemsCount - 1
-            else
-                if name then
-                    local bag, slot = LootRaffle_GetTradableItemBagPosition(link)
-                    if bag and slot then
-                        -- LootRaffle.Log("Looted item data requests fnished for", link)
-                        LootRaffle_TryDetectNewRaffleOpportunity(link, quality, bag, slot)
-                        table.remove(LootedItems, i)
-                        LootedItemsCount = LootedItemsCount - 1
-                    else
-                        itemData.tries = itemData.tries + 1
-                        LootRaffle.Log("Bag and slot not yet available for:", link)
-                    end
-                else
-                    itemData.tries = itemData.tries + 1
-                    LootRaffle.Log("Item info not yet available for: ", itemData.message)
-                end
-            end
-        end
-    end
+    LootRaffle_ProcessLootedItem(lootMessage)
 end
 
 local function OnMessageRecieved(prefix, message)
@@ -303,7 +254,7 @@ local function OnTradeAccept(playerAccepted, targetAccepted)
     LootRaffle.PlayerAcceptedTrade = playerAccepted == 1
 
     if #LootRaffle.PendingTrades == 0 or playerAccepted == 0 or targetAccepted == 0 then 
-        LootRaffle.Log("Trade state changed: player:", playerAccepted, "target:", targetAccepted)
+        LootRaffle.Log("Trade state changed: player:", playerAccepted, "targetName:", targetAccepted)
         return
     end
     ProcessTradeAcceptance()
@@ -327,8 +278,6 @@ local eventHandlers = {
     GET_ITEM_INFO_RECEIVED = OnItemInfoRecieved,
     TRADE_SHOW = OnTradeOpened,
     TRADE_CLOSED = OnTradeClosed,
-    LOOT_OPENED = OnLootWindowOpen,
-    LOOT_CLOSED = OnLootWindowClose,
     CHAT_MSG_WHISPER = OnWhisperReceived,
     TRADE_ACCEPT_UPDATE = OnTradeAccept
 }
@@ -362,7 +311,6 @@ local function OnUpdate(self, elapsed)
         LootRaffle_CheckRollStatus()
         if not InCombatLockdown() then
             LootRaffle_TryPromptForRaffle()
-            ProcessLootedItems()
             if not TradeWindowIsOpen then
                 LootRaffle_TryTradeWinners()
             end
@@ -372,6 +320,5 @@ end
 
 local f = CreateFrame("frame")
 f:SetScript("OnUpdate", OnUpdate)
--- LootRaffle_Frame:SetScript("OnUpdate", OnUpdate)
 
 

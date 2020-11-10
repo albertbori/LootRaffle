@@ -43,13 +43,15 @@ end
 function LootRaffle_GetGroupSize()
     if IsInRaid() or IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
         return GetNumGroupMembers()
-    else
+    elseif IsInGroup() then
         local partyRoster = GetHomePartyInfo()
         local partySize = 0
         for i, name in ipairs(partyRoster) do
             partySize = partySize + 1
         end
         return partySize
+    else
+        return 1
     end
 end
 

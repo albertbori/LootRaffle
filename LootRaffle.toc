@@ -1,7 +1,7 @@
 ## Interface: 90001
 ## Title: LootRaffle
 ## Author: Taunkah - Doomhammer
-## Version: 1.2
+## Version: 1.2.1
 ## SavedVariables: LootRaffle_DB
 
 Constants.lua
