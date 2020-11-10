@@ -1,13 +1,49 @@
 local _, LootRaffle_Local=...
 
+function LootRaffle_ProcessLootedItem(itemParam, attempt)
+    -- attempt to find the item info and slot info of each looted item
+    attempt = (attempt or 0) + 1
+    LootRaffle.Log("Processing looted item:", itemParam, "attempt:", attempt)
+    if attempt > 10 then --max retries to find the item data
+        LootRaffle.Log("Max loot processing retries for item:", itemParam)
+        return
+    end
+
+    local name, itemLink, quality = GetItemInfo(itemParam)
+    if not name then
+        LootRaffle.Log("Item info not yet available for:", itemLink)
+        LootRaffle_AsyncProcessLootedItem(itemParam, attempt)
+    end
+
+    local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
+    if not bag or not slot then
+        LootRaffle.Log("Bag and slot not yet available for:", itemLink)
+        LootRaffle_AsyncProcessLootedItem(itemParam, attempt)
+    end
+
+    LootRaffle_TryDetectNewRaffleOpportunity(itemLink, quality, bag, slot)
+end
+
+function LootRaffle_AsyncProcessLootedItem(itemParam, attempt)
+    -- Use current latency to delay
+    local down, up, lagHome, lagWorld = GetNetStats();
+    local delay = (lagWorld / 1000) * 2
+    LootRaffle.Log("Delaying for ", delay, " seconds for looted item data:", itemParam)
+    C_Timer.After(delay, function() LootRaffle_ProcessLootedItem(itemParam, attempt) end)
+end
+
 function LootRaffle_TryDetectNewRaffleOpportunity(itemLink, quality, bag, slot)
     if not bag or not slot then
-        LootRaffle.Log("No bag or slot detected for", itemLink)
+        LootRaffle.Log("No bag or slot detected for potential raffle item:", itemLink)
         return
     end
     -- must be of minimum quality, the owner of the item, in a group of some type, and the item be tradable
-    if quality >= LootRaffle.MinimumQuality and IsInGroup() and not LootRaffle_FindIgnoredItemIndex(itemLink) then
-        LootRaffle.Log("LootRaffle detected new tradable loot: ", itemLink)
+    if quality < LootRaffle.MinimumQuality then
+        LootRaffle.Log("Potential raffle item:", itemLink, "is not high enough quality:", quality)
+        return
+    end
+    if not LootRaffle_FindIgnoredItemIndex(itemLink) then
+        LootRaffle.Log("Item can be raffled: ", itemLink)
         LootRaffle_TryPromptForRaffle(itemLink)
     end
 end
