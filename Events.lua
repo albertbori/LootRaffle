@@ -142,10 +142,10 @@ local function OnUnload(...)
 end
 
 local function OnItemLooted(lootMessage, sender, language, channelString, targetName, flags, unknown, channelNumber, channelName, unknown, counter)
-    LootRaffle.Log("Looted item detected for ", playerName, "lootMessage:", lootMessage, "auto-detect:", LootRaffle.AutoDetectLootedItems, "grouped:", IsInGroup())
-    if not LootRaffle.AutoDetectLootedItems then return end
     local playerName = LootRaffle_UnitFullName("player")
     if playerName ~= targetName then return end
+    LootRaffle.Log("Looted item detected for ", playerName, "lootMessage:", lootMessage, "auto-detect:", LootRaffle.AutoDetectLootedItems, "grouped:", IsInGroup())
+    if not LootRaffle.AutoDetectLootedItems then return end
     if not IsInGroup() then return end
     local instanceType = select(2, IsInInstance())
     if instanceType ~= "party" and instanceType ~= "raid" then return end
