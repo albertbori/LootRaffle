@@ -1,4 +1,4 @@
-## Interface: 90001
+## Interface: 90002
 ## Title: LootRaffle
 ## Author: Taunkah - Doomhammer
 ## Version: 1.2.1
