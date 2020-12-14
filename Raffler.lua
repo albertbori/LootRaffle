@@ -3,22 +3,24 @@ local _, LootRaffle_Local=...
 function LootRaffle_ProcessLootedItem(itemParam, attempt)
     -- attempt to find the item info and slot info of each looted item
     attempt = (attempt or 0) + 1
-    LootRaffle.Log("Processing looted item:", itemParam, "attempt:", attempt)
     if attempt > 10 then --max retries to find the item data
         LootRaffle.Log("Max loot processing retries for item:", itemParam)
         return
     end
+    LootRaffle.Log("Processing looted item:", itemParam, "attempt:", attempt)
 
     local name, itemLink, quality = GetItemInfo(itemParam)
-    if not name then
-        LootRaffle.Log("Item info not yet available for:", itemLink)
+    if not itemLink then
+        LootRaffle.Log("Item info not yet available for:", itemParam)
         LootRaffle_WaitToProcessLootedItem(itemParam, attempt)
+        return
     end
 
     local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
     if not bag or not slot then
         LootRaffle.Log("Bag and slot not yet available for:", itemLink)
         LootRaffle_WaitToProcessLootedItem(itemParam, attempt)
+        return
     end
 
     LootRaffle_TryDetectNewRaffleOpportunity(itemLink, quality, bag, slot)
