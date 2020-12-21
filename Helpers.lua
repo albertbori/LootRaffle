@@ -120,3 +120,11 @@ end
 function LootRaffle_GetItemNameFromLink(itemLink)
     return string.match(itemLink, "\124h(%[.-%])\124")
 end
+
+function LootRaffle_GetItemLinkFromMessage(message)
+    return string.match(message, "\124.+\124r")
+end
+
+function LootRaffle_EscapePatternCharacters(text)
+    return string.gsub(text, "([^%w])", "%%%1")
+end

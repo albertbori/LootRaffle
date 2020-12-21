@@ -4,14 +4,20 @@ function LootRaffle_ProcessLootedItem(itemParam, attempt)
     -- attempt to find the item info and slot info of each looted item
     attempt = (attempt or 0) + 1
     if attempt > 10 then --max retries to find the item data
-        LootRaffle.Log("Max loot processing retries for item:", itemParam)
+        LootRaffle.Log("Max loot processing retries for item:", "\""..itemParam.."\"")
         return
     end
-    LootRaffle.Log("Processing looted item:", itemParam, "attempt:", attempt)
+    LootRaffle.Log("Processing looted item:", "\""..itemParam.."\"", "attempt:", attempt)
 
-    local name, itemLink, quality = GetItemInfo(itemParam)
+    local itemLinkText = LootRaffle_GetItemLinkFromMessage(itemParam)
+    if not itemLinkText then
+        LootRaffle.Log("Item id was not extractable from loot text")
+    end
+
+    local _, itemLink, quality = GetItemInfo(itemParam)
+    itemLink = itemLink or itemLinkText -- Some items will return nil from GetItemInfo (like conjured items), so a manual link-scrape is required
     if not itemLink then
-        LootRaffle.Log("Item info not yet available for:", itemParam)
+        LootRaffle.Log("Item info not yet available for: \""..itemLink.."\"")
         LootRaffle_WaitToProcessLootedItem(itemParam, attempt)
         return
     end
@@ -29,7 +35,7 @@ end
 function LootRaffle_WaitToProcessLootedItem(itemParam, attempt)
     -- Use current latency to delay
     local down, up, lagHome, lagWorld = GetNetStats();
-    local delay = (lagWorld / 1000) * 2
+    local delay = (lagWorld / 1000) * 4 -- (2 full round-trips, just in case)
     LootRaffle.Log("Delaying for ", delay, " seconds for looted item data:", itemParam)
     C_Timer.After(delay, function() LootRaffle_ProcessLootedItem(itemParam, attempt) end)
 end

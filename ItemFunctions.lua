@@ -30,7 +30,7 @@ function LootRaffle_UnitCanUseItem(unitName, itemLink)
     LootRaffle.Log("Checking to see if", unitName, "(", localizedClassName, "|", classCodeName, ") can use item:", item.Link, "| itemClass:", item.ItemClass, "| itemSubClass:", item.ItemSubClass, "| equipSlot:", item.EquipSlot)
 
     -- if it's armor or weapon, check if class can use it.
-    if (item.ItemClass == "Armor" or item.ItemClass == "Weapon") and item.ItemSubClass ~= "Miscellaneous" and equipSlot ~= "INVTYPE_CLOAK" then
+    if (item.ItemClass == "Armor" or item.ItemClass == "Weapon") and item.ItemSubClass ~= "Miscellaneous" and item.EquipSlot ~= "INVTYPE_CLOAK" then
         local isProficient = LootRaffle_TableContains(LootRaffle_ClassProficiencies[classCodeName][item.ItemClass], item.ItemSubClass)
         if not isProficient then
             LootRaffle.Log("Player CANNOT use "..item.ItemClass.." of type "..item.ItemSubClass)
@@ -73,12 +73,8 @@ function LootRaffle_UnitCanUseItem(unitName, itemLink)
         end
     end
 
-    LootRaffle.Log("Player can use "..item.ItemClass.." of type "..item.ItemSubClass)
+    LootRaffle.Log("Player can use ", item.ItemClass, "of type", item.ItemSubClass, "in slot", item.EquipSlot)
     return true
-end
-
-function LootRaffle_EscapePatternCharacters(text)
-    return string.gsub(text, "([^%w])", "%%%1")
 end
 
 function LootRaffle_GetItemInfo(itemLink, bag, slot)

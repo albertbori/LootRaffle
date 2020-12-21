@@ -201,7 +201,7 @@ local function OnWhisperReceived(msg, author, language, status, msgid, unknown, 
     LootRaffle_HandleRollWhisper(itemLink, rollerName, rollType)
 end
 
-local function OnItemInfoRecieved(itemId)
+local function OnItemInfoRecieved(itemId, success)
     local name, itemLink = GetItemInfo(itemId)
     if not itemLink then return end
     local deadLink = LootRaffle_GetItemNameFromLink(itemLink)
