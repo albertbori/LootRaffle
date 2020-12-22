@@ -16,7 +16,7 @@ function LootRaffle_ProcessLootedItem(itemParam, attempt)
 
     local _, itemLink, quality = GetItemInfo(itemParam)
     itemLink = itemLink or itemLinkText -- Some items will return nil from GetItemInfo (like conjured items), so a manual link-scrape is required
-    if not itemLink and not quality then
+    if not itemLink or not quality then
         LootRaffle.Log("Item info not yet available for: \""..(itemLinkText or itemParam).."\"")
         LootRaffle_WaitToProcessLootedItem(itemParam, attempt)
         return
