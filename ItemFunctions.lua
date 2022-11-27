@@ -4,9 +4,9 @@ function LootRaffle_GetTradableItemBagPosition(itemLink)
     LootRaffle.Log("Searching for", itemLink, "in bags...")
     local variantFragmentPattern = LootRaffle_EscapePatternCharacters(select(1, GetItemInfo(itemLink))).." of "
     for bag = NUM_BAG_SLOTS, 0, -1 do
-        local slotCount = GetContainerNumSlots(bag)
+        local slotCount = C_Container.GetContainerNumSlots(bag)
         for slot = slotCount, 1, -1 do
-            local containerItemLink = GetContainerItemLink(bag, slot)
+            local containerItemLink = C_Container.GetContainerItemLink(bag, slot)
             if containerItemLink == itemLink and LootRaffle_IsTradableItem(containerItemLink, bag, slot) then
                 LootRaffle.Log(itemLink.." found in slot: "..bag..","..slot)
                 return bag, slot
