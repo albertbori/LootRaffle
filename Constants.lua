@@ -44,6 +44,12 @@ LootRaffle_ClassProficiencies["DRUID"] = {
     Weapon = { "Daggers", "Fist Weapons", "One-Handed Maces", "Polearms", "Staves", "Two-Handed Maces" },
     Relics = { RELIC_SLOT_TYPE_ARCANE, RELIC_SLOT_TYPE_LIFE, RELIC_SLOT_TYPE_FROST, RELIC_SLOT_TYPE_BLOOD, RELIC_SLOT_TYPE_FIRE }
 }
+LootRaffle_ClassProficiencies["EVOKER"] = {
+    MainStats = { SPEC_FRAME_PRIMARY_STAT_INTELLECT },
+    Armor = { "Mail" },
+    Weapon = { "Daggers", "Fist Weapons", "One-handed Maces", "Two-Handed Maces", "One-Handed Axes", "Two-Handed Axes", "One-Handed Swords", "Two-Handed Swords", "Staves" },
+    Relics = {  }
+}
 LootRaffle_ClassProficiencies["HUNTER"] = {
     MainStats = { SPEC_FRAME_PRIMARY_STAT_AGILITY },
     Armor = { "Mail" },
