@@ -7,12 +7,16 @@ function LootRaffle_GetTradableItemBagPosition(itemLink)
         local slotCount = C_Container.GetContainerNumSlots(bag)
         for slot = slotCount, 1, -1 do
             local containerItemLink = C_Container.GetContainerItemLink(bag, slot)
-            if containerItemLink == itemLink and LootRaffle_IsTradableItem(containerItemLink, bag, slot) then
-                LootRaffle.Log(itemLink.." found in slot: "..bag..","..slot)
-                return bag, slot
-            elseif containerItemLink and string.find(containerItemLink, variantFragmentPattern) and LootRaffle_IsTradableItem(containerItemLink, bag, slot) then -- check for variant. "Bracers of Intelletct", etc.
-                LootRaffle.Log("Green item variant for "..itemLink.." found in slot: "..bag..","..slot)
-                return bag, slot
+            if containerItemLink and LootRaffle_IsTradableItem(containerItemLink, bag, slot) then
+                containerItemLink = string.gsub(containerItemLink, "Player-[-%a%d]+", "") -- try removing crafter player id, ie: "Player-1190-0B8EB803" which doesn't appear in chat-linked item links
+                LootRaffle.Log("Checking "..containerItemLink..":\n"..gsub(containerItemLink, "\124", "\124\124").."\nagainst\n"..gsub(itemLink, "\124", "\124\124").."\nfound in slot: "..bag..","..slot)
+                if containerItemLink == itemLink then
+                    LootRaffle.Log(itemLink.." found in slot: "..bag..","..slot)
+                    return bag, slot
+                elseif string.find(containerItemLink, variantFragmentPattern) then -- check for variant. "Bracers of Intelletct", etc.
+                    LootRaffle.Log("Green item variant for "..itemLink.." found in slot: "..bag..","..slot)
+                    return bag, slot
+                end
             end
         end
     end
