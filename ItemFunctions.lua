@@ -9,7 +9,7 @@ function LootRaffle_GetTradableItemBagPosition(itemLink)
             local containerItemLink = C_Container.GetContainerItemLink(bag, slot)
             if containerItemLink and LootRaffle_IsTradableItem(containerItemLink, bag, slot) then
                 containerItemLink = string.gsub(containerItemLink, "Player-[-%a%d]+", "") -- try removing crafter player id, ie: "Player-1190-0B8EB803" which doesn't appear in chat-linked item links
-                LootRaffle.Log("Checking "..containerItemLink..":\n"..gsub(containerItemLink, "\124", "\124\124").."\nagainst\n"..gsub(itemLink, "\124", "\124\124").."\nfound in slot: "..bag..","..slot)
+                --LootRaffle.Log("Checking "..containerItemLink..":\n"..gsub(containerItemLink, "\124", "\124\124").."\nagainst\n"..gsub(itemLink, "\124", "\124\124").."\nfound in slot: "..bag..","..slot)
                 if containerItemLink == itemLink then
                     LootRaffle.Log(itemLink.." found in slot: "..bag..","..slot)
                     return bag, slot
