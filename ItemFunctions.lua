@@ -20,7 +20,7 @@ function LootRaffle_GetTradableItemBagPosition(itemLink)
             end
         end
     end
-    LootRaffle.Log(itemLink, "not found in bags.")
+    LootRaffle.Log(itemLink, "not found in bags or wasn't tradeable.")
 end
 
 function LootRaffle_IsTradableItem(itemLink, bag, slot)
@@ -135,6 +135,12 @@ function LootRaffle_CategorizeTooltipText(text, itemInfo)
         itemInfo.OnUse = text
         return
     elseif not itemInfo.Soulbound and string.match(text, "^"..ITEM_SOULBOUND.."$") then -- "Soulbound"
+        itemInfo.Soulbound = true
+        return
+    elseif not itemInfo.Soulbound and string.match(text, "^"..ITEM_ACCOUNTBOUND.."$") then -- "Account Bound"
+        itemInfo.Soulbound = true
+        return
+    elseif not itemInfo.Soulbound and string.match(text, "^"..ITEM_BNETACCOUNTBOUND.."$") then -- "Blizzard Account Bound"
         itemInfo.Soulbound = true
         return
     end

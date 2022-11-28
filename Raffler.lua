@@ -223,6 +223,7 @@ function LootRaffle_TryTradeWinners()
     if #LootRaffle.PendingTrades == 0 or LootRaffle.TradeWindowIsOpen then return end
 
     local pendingTrade = LootRaffle.PendingTrades[1]
+    LootRaffle.Log("Attempting to trade", pendingTrade.itemLink)
 
     pendingTrade.tryCount = pendingTrade.tryCount + 1
     if pendingTrade.tryCount >= 60 then
@@ -235,23 +236,27 @@ function LootRaffle_TryTradeWinners()
     local canTrade = true
     if not winnerUnitName then
         canTrade = false
-        LootRaffle.Log("Trade attempt failed, data not available for", pendingTrade.itemLink)
+        LootRaffle.Log("Data not available for", pendingTrade.itemLink)
     elseif UnitIsDeadOrGhost(winnerUnitName) then
         canTrade = false
-        LootRaffle.Log("Trade failed, winner is dead")
-    elseif UnitAffectingCombat("player") == 1 or UnitAffectingCombat(winnerUnitName) == 1 then
+        LootRaffle.Log("Winner is dead")
+    elseif UnitAffectingCombat("player") == 1 then
         canTrade = false
-        LootRaffle.Log("Trade failed, player or winner is in combat.")
+        LootRaffle.Log("You are in combat.")
+    elseif UnitAffectingCombat(winnerUnitName) == 1 then
+        canTrade = false
+        LootRaffle.Log("Winner is in combat.")
+    elseif not UnitIsConnected(winnerUnitName) then
+        canTrade = false
+        LootRaffle.Log("Player is offline.")
     elseif not CheckInteractDistance(winnerUnitName, 2) then -- 1: Inspect, 2: Trade, 3: Duel, 4: Follow
         canTrade = false
-        LootRaffle.Log("Trade failed, winner is out of range.")
-        -- if LootRaffe_Following == false then
-            if CheckInteractDistance(winnerUnitName, 4) then -- 1: Inspect, 2: Trade, 3: Duel, 4: Follow
-                LootRaffle.Log("Auto-following winner...")
-                -- LootRaffe_Following = true
-                FollowUnit(winnerUnitName) --TODO: Check to see if this is awful.
-            end
-        -- end
+        LootRaffle.Log("Winner is out of range.")
+        --TODO: FollowUnit(target) is now a protected action. This will require some sort of player input to work
+        --if CheckInteractDistance(winnerUnitName, 4) then -- 1: Inspect, 2: Trade, 3: Duel, 4: Follow
+        --    LootRaffle.Log("Auto-following winner...")
+        --    FollowUnit(winnerUnitName) --TODO: Check to see if this is awful.
+        --end
     end
 
     if not canTrade then return end
