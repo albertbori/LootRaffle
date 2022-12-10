@@ -3,21 +3,36 @@ local _, LootRaffle_Local=...
 function LootRaffle_GetTradableItemBagPosition(itemLink)
     LootRaffle.Log("Searching for", itemLink, "in bags...")
     local variantFragmentPattern = LootRaffle_EscapePatternCharacters(select(1, GetItemInfo(itemLink))).." of "
-    for bag = NUM_BAG_SLOTS, 0, -1 do
-        local slotCount = C_Container.GetContainerNumSlots(bag)
-        for slot = slotCount, 1, -1 do
+    for bag = BACKPACK_CONTAINER, NUM_TOTAL_EQUIPPED_BAG_SLOTS do
+        LootRaffle.Log("Searching bag", bag)
+	    for slot = 1,  C_Container.GetContainerNumSlots(bag) do
             local containerItemLink = C_Container.GetContainerItemLink(bag, slot)
-            if containerItemLink and LootRaffle_IsTradableItem(containerItemLink, bag, slot) then
+            if containerItemLink then
+                local isNameMatch = false
+
                 containerItemLink = string.gsub(containerItemLink, "Player-[-%a%d]+", "") -- try removing crafter player id, ie: "Player-1190-0B8EB803" which doesn't appear in chat-linked item links
                 --LootRaffle.Log("Checking "..containerItemLink..":\n"..gsub(containerItemLink, "\124", "\124\124").."\nagainst\n"..gsub(itemLink, "\124", "\124\124").."\nfound in slot: "..bag..","..slot)
                 if containerItemLink == itemLink then
                     LootRaffle.Log(itemLink.." found in slot: "..bag..","..slot)
-                    return bag, slot
-                elseif string.find(containerItemLink, variantFragmentPattern) then -- check for variant. "Bracers of Intelletct", etc.
+                    isNameMatch = true
+                elseif string.find(containerItemLink, variantFragmentPattern) then -- check for variant. "Bracers of Intellect", etc.
                     LootRaffle.Log("Green item variant for "..itemLink.." found in slot: "..bag..","..slot)
-                    return bag, slot
+                    isNameMatch = true
                 end
-            end
+
+                if isNameMatch then
+			        local isTradeable = LootRaffle_IsTradableItem(containerItemLink, bag, slot)
+                    if isTradeable then
+                        return bag, slot
+                    else
+                        LootRaffle.Log("Slot", bag..","..slot, "is not tradeable")
+			        end
+                else
+                    LootRaffle.Log("Slot", bag..","..slot, "name did not match")
+				end
+            else
+                LootRaffle.Log("Slot", bag..","..slot, "contains no item")
+		    end
         end
     end
     LootRaffle.Log(itemLink, "not found in bags or wasn't tradeable.")
