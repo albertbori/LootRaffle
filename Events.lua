@@ -96,12 +96,16 @@ function SlashCmdList.LootRaffle(msg, editbox)
         if not name then
             print("LootRaffle commands:"); 
             print(" - '[Item Link]': Starts a raffle");
-            print(" - 'logging (on|off)': Toggles logging");
-            print(" - 'auto-detect (on|off)': Toggles Automatic raffle prompt when you loot a tradable item.");
-            print(" - 'ignore [Item Link]': Adds [Item Link] to your ignore list. Ignored items won't prompt you to start a raffle.");
-            print(" - 'unignore [Item Link]': Removes [Item Link] from your ignore list.");
-            print(" - 'showignore': Prints out your ignore list.");
-            print(" - 'clearignore': Clears the ignore list.");
+            print(" - 'auto-detect (on|off)': Toggles Automatic raffle prompt when you loot a tradable item");
+            print(" - 'ignore [Item Link]': Adds [Item Link] to your ignore list. Ignored items won't prompt you to start a raffle");
+            print(" - 'unignore [Item Link]': Removes [Item Link] from your ignore list");
+            print(" - 'showignore': Prints out your ignore list");
+            print(" - 'clearignore': Clears the ignore list");
+            print("LootRaffle debug commands:"); 
+            print(" - 'logging (on|off)': Toggles debug logging");
+            print(" - '[Item Link] tradable': Returns if LootRaffle thinks the item is tradable");
+            print(" - '[Item Link] usable (optional: unit name)': Returns if LootRaffle thinks the item is usable by the unit. Defaults to 'player' unit");
+            print(" - '[Item Link] prompt': Triggers the raffle prompt window for the linked item");
             return
         end
 

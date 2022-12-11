@@ -21,11 +21,11 @@ function LootRaffle_GetTradableItemBagPosition(itemLink)
                 end
 
                 if isNameMatch then
-			        local isTradeable = LootRaffle_IsTradableItem(containerItemLink, bag, slot)
-                    if isTradeable then
+			        local isTradable = LootRaffle_IsTradableItem(containerItemLink, bag, slot)
+                    if isTradable then
                         return bag, slot
                     else
-                        LootRaffle.Log("Slot", bag..","..slot, "is not tradeable")
+                        LootRaffle.Log("Slot", bag..","..slot, "is not tradable")
 			        end
                 else
                     LootRaffle.Log("Slot", bag..","..slot, "name did not match")
@@ -35,7 +35,7 @@ function LootRaffle_GetTradableItemBagPosition(itemLink)
 		    end
         end
     end
-    LootRaffle.Log(itemLink, "not found in bags or wasn't tradeable.")
+    LootRaffle.Log(itemLink, "not found in bags or wasn't tradable.")
 end
 
 function LootRaffle_IsTradableItem(itemLink, bag, slot)
