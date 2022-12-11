@@ -97,12 +97,7 @@ function LootRaffle_UnitCanUseItem(unitName, itemLink)
 end
 
 function LootRaffle_GetItemInfo(itemLink, bag, slot)
-    -- if LootRaffle.ItemInfoCache[itemLink] then --TODO Make sure this gets cleared at the end of all raffles and caches item link vs bag/slot searches separately
-    --     return LootRaffle.ItemInfoCache[itemLink]
-    -- end
-
     local name, link, quality, itemLevel, requiredLevel, itemClass, itemSubClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemLink)
-    --local statsTable = GetItemStats(itemLink) --useless. Doesn't return stats for other specs
 
     local itemInfo = {
         Name = name,
@@ -116,16 +111,22 @@ function LootRaffle_GetItemInfo(itemLink, bag, slot)
         Texture = texture,
         Stats = {}
     }
-    local tooltipTable = {}
+    local tooltipData = {}
+
     if bag and slot then
-        tooltipTable = LootRaffle_GetItemTooltipTableByBagSlot(bag, slot)
+        tooltipData = C_TooltipInfo.GetBagItem(bag, slot)
     else
-        tooltipTable = LootRaffle_GetItemTooltipTableByItemLink(itemLink)
+        tooltipData = C_TooltipInfo.GetHyperlink(itemLink)
     end
-    for i in pairs(tooltipTable) do
-        LootRaffle_CategorizeTooltipText(tooltipTable[i], itemInfo)
+
+    TooltipUtil.SurfaceArgs(tooltipData)
+    for _, line in ipairs(tooltipData.lines) do
+        TooltipUtil.SurfaceArgs(line)
+        LootRaffle_CategorizeTooltipText(line.leftText, itemInfo)
     end
-    -- LootRaffle.ItemInfoCache[itemLink] = itemInfo
+
+    --DevTools_Dump({ tooltipData })
+
     return itemInfo
 end
 
@@ -209,39 +210,4 @@ function LootRaffle_CategorizeTooltipText(text, itemInfo)
 
     --TODO:
     -- Sockets
-end
-
--- Builds an item tooltip and then scans the tooltip to extract the text into a table
-function LootRaffle_GetItemTooltipTableByBagSlot(bag, slot)
-    local itemTooltip = LootRaffle_BuildItemTooltip()
-    itemTooltip:SetBagItem(bag, slot)
-    return LootRaffle_GetItemTooltipTable(itemTooltip)
-end
-
-function LootRaffle_GetItemTooltipTableByItemLink(itemLink)
-    local itemTooltip = LootRaffle_BuildItemTooltip()
-    itemTooltip:SetHyperlink(itemLink)
-    return LootRaffle_GetItemTooltipTable(itemTooltip)
-end
-
-function LootRaffle_BuildItemTooltip()
-    local itemTooltip = CreateFrame("GameTooltip", "LootRaffle_ParseItemTooltip", nil, "GameTooltipTemplate")
-    itemTooltip:SetOwner(UIParent, "ANCHOR_NONE")
-    return itemTooltip
-end
-
-function LootRaffle_GetItemTooltipTable(itemTooltip)
-    local tooltipTable = {}
-    itemTooltip:Show()
-    for i = 1, itemTooltip:NumLines() do
-        local tooltipLine = _G["LootRaffle_ParseItemTooltipTextLeft"..i]
-        if tooltipLine then
-            local text = tooltipLine:GetText()
-            table.insert(tooltipTable, text)
-        else
-            LootRaffle.Log("Failed to read parsing tooltip text line", i)
-        end
-    end
-    itemTooltip:Hide()
-    return tooltipTable
 end
