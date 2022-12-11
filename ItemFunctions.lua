@@ -87,7 +87,7 @@ function LootRaffle_UnitCanUseItem(unitName, itemLink)
             end
         end
         if not found then
-            LootRaffle.Log("Player CANNOT use "..item.ItemClass.." of type "..item.ItemSubClass..". Wrong reilc type '"..item.RelicType.."' for class: "..classCodeName..".")
+            LootRaffle.Log("Player CANNOT use "..item.ItemClass.." of type "..item.ItemSubClass..". Wrong relic type '"..item.RelicType.."' for class: "..classCodeName..".")
             return false
         end
     end
@@ -161,7 +161,7 @@ function LootRaffle_CategorizeTooltipText(text, itemInfo)
     end
 
     --check if trading this BoP is still allowed
-    --splits the template string on the macro text (%s), checks to see if both halfs match
+    --splits the template string on the macro text (%s), checks to see if both halves match
     if not itemInfo.TemporarilyTradable then
         local pattern = LootRaffle_EscapePatternCharacters(BIND_TRADE_TIME_REMAINING) -- "You may trade this item with players that were also eligible to loot this item for the next %s."
         pattern = string.gsub(pattern, "%%%%s", ".+")

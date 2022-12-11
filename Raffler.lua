@@ -59,7 +59,7 @@ end
 function LootRaffle_TryPromptForRaffle(itemLink)
     if itemLink then
         if LootRaffle.PossibleRafflePromptShown then
-            LootRaffle.Log("Prompt already shown. Queueing "..itemLink.."...")
+            LootRaffle.Log("Prompt already shown. Queuing "..itemLink.."...")
             table.insert(LootRaffle.PossibleRaffleItems, itemLink)
             LootRaffle.PossibleRaffleItemCount = LootRaffle.PossibleRaffleItemCount + 1
         else

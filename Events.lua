@@ -163,7 +163,7 @@ local function OnMessageRecieved(prefix, message)
     if prefix == LootRaffle.NEW_RAFFLE_MESSAGE then
         local rafflerName, raffleId, itemLink = LootRaffle_Notification_ParseRaffleStart(message)
         if rafflerName == LootRaffle_UnitFullName("player") then return end
-        LootRaffle.Log("New raffle message recieved from: ", rafflerName, " for id:", raffleId, "item: ", itemLink)
+        LootRaffle.Log("New raffle message received from: ", rafflerName, " for id:", raffleId, "item: ", itemLink)
         local name = GetItemInfo(itemLink)
         if name then
             LootRaffle_HandleNewRaffleNotification(itemLink, rafflerName, raffleId)
@@ -176,7 +176,7 @@ local function OnMessageRecieved(prefix, message)
     elseif prefix == LootRaffle.ROLL_ON_ITEM_MESSAGE then
         local rafflerName, raffleId, itemLink, rollerName, rollType = LootRaffle_Notification_ParseRoll(message)
         if rafflerName ~= LootRaffle_UnitFullName("player") then return end
-        LootRaffle.Log("Roll message recieved from:", rollerName, rollType, "for:", itemLink)
+        LootRaffle.Log("Roll message received from:", rollerName, rollType, "for:", itemLink)
         LootRaffle_HandleRollNotification(raffleId, rollerName, rollType)
     end
 end
