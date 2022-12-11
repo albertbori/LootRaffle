@@ -4,7 +4,7 @@ function LootRaffle_GetTradableItemBagPosition(itemLink)
     LootRaffle.Log("Searching for", itemLink, "in bags...")
     local variantFragmentPattern = LootRaffle_EscapePatternCharacters(select(1, GetItemInfo(itemLink))).." of "
     for bag = BACKPACK_CONTAINER, NUM_TOTAL_EQUIPPED_BAG_SLOTS do
-        LootRaffle.Log("Searching bag", bag)
+        --LootRaffle.Log("Searching bag", bag)
 	    for slot = 1,  C_Container.GetContainerNumSlots(bag) do
             local containerItemLink = C_Container.GetContainerItemLink(bag, slot)
             if containerItemLink then
@@ -25,17 +25,17 @@ function LootRaffle_GetTradableItemBagPosition(itemLink)
                     if isTradable then
                         return bag, slot
                     else
-                        LootRaffle.Log("Slot", bag..","..slot, "is not tradable")
+                        LootRaffle.Log("Slot", bag..","..slot, "matched but is not tradable")
 			        end
                 else
-                    LootRaffle.Log("Slot", bag..","..slot, "name did not match")
+                    --LootRaffle.Log("Slot", bag..","..slot, "name did not match")
 				end
             else
-                LootRaffle.Log("Slot", bag..","..slot, "contains no item")
+                --LootRaffle.Log("Slot", bag..","..slot, "contains no item")
 		    end
         end
     end
-    LootRaffle.Log(itemLink, "not found in bags or wasn't tradable.")
+    LootRaffle.Log(itemLink, "no tradable match was found in bags")
 end
 
 function LootRaffle_IsTradableItem(itemLink, bag, slot)

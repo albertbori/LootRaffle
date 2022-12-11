@@ -74,8 +74,12 @@ function SlashCmdList.LootRaffle(msg, editbox)
         end
     elseif string.find(msg, "usable") then
         local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
-        local unitName = string.match(msg, "usable (%w+) ")
+        local unitName = string.match(msg, "usable ([%a%d]+)")
         if not unitName then unitName = "player" end
+        if not UnitClass(unitName) then
+            print("Invalid unit name:", unitName)
+            return
+		end
         print("[LootRaffle] Testing if item: "..itemLink.." is usable by "..unitName)
         if itemLink then
             if LootRaffle_UnitCanUseItem(unitName, itemLink) then
@@ -165,11 +169,20 @@ end
 local function OnItemLooted(lootMessage, sender, language, channelString, targetName, flags, unknown, channelNumber, channelName, unknown, counter)
     local playerName = LootRaffle_UnitFullName("player")
     if playerName ~= targetName then return end
-    LootRaffle.Log("Looted item detected for ", playerName, "lootMessage:", lootMessage, "auto-detect:", LootRaffle.AutoDetectLootedItems, "grouped:", IsInGroup())
-    if not LootRaffle.AutoDetectLootedItems then return end
-    if not IsInGroup() then return end
+    LootRaffle.Log("OnItemLooted", playerName, '"'..lootMessage..'"')
+    if not LootRaffle.AutoDetectLootedItems then
+        LootRaffle.Log("Skipping raffle check: auto-detect loot items is 'off'")
+		return
+	end
+    if not IsInGroup() then
+        LootRaffle.Log("Skipping raffle check: Player is not in a group")
+		return
+	end
     local instanceType = select(2, IsInInstance())
-    if instanceType ~= "party" and instanceType ~= "raid" then return end
+    if instanceType ~= "party" and instanceType ~= "raid" then
+        LootRaffle.Log("Skipping raffle check: Player is not in a valid instance type:", instanceType)
+        return
+    end
     LootRaffle_ProcessLootedItem(lootMessage)
 end
 
