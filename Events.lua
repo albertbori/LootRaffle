@@ -53,7 +53,7 @@ function SlashCmdList.LootRaffle(msg, editbox)
     elseif string.find(msg, "showignore") then
         print("[LootRaffle] Showing ignore list...")
         LootRaffle_ShowIgnored()
-    elseif string.find(msg, "test") then
+    elseif string.find(msg, "test-roll") then
         local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
         print("[LootRaffle] Testing item: "..itemLink)
         if itemLink then
@@ -94,18 +94,35 @@ function SlashCmdList.LootRaffle(msg, editbox)
         -- try for item
         local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(msg)
         if not name then
-            print("LootRaffle commands:"); 
-            print(" - '[Item Link]': Starts a raffle");
-            print(" - 'auto-detect (on|off)': Toggles Automatic raffle prompt when you loot a tradable item");
-            print(" - 'ignore [Item Link]': Adds [Item Link] to your ignore list. Ignored items won't prompt you to start a raffle");
-            print(" - 'unignore [Item Link]': Removes [Item Link] from your ignore list");
-            print(" - 'showignore': Prints out your ignore list");
-            print(" - 'clearignore': Clears the ignore list");
-            print("LootRaffle debug commands:"); 
-            print(" - 'logging (on|off)': Toggles debug logging");
-            print(" - '[Item Link] tradable': Returns if LootRaffle thinks the item is tradable");
-            print(" - '[Item Link] usable (optional: unit name)': Returns if LootRaffle thinks the item is usable by the unit. Defaults to 'player' unit");
-            print(" - '[Item Link] prompt': Triggers the raffle prompt window for the linked item");
+            print([[
+
+-- LootRaffle Commands --
+/raffle [Item Link]
+    Starts a raffle
+/raffle auto-detect (on|off)
+    Toggles Automatic raffle prompt when you loot a tradable item
+/raffle ignore [Item Link]
+    Adds [Item Link] to your ignore list. Ignored items won't prompt you to start a raffle
+/raffle unignore [Item Link]
+    Removes [Item Link] from your ignore list
+/raffle showignore
+    Prints out your ignore list
+/raffle clearignore
+    Clears the ignore list
+
+-- LootRaffle Debug Commands --
+/raffle logging (on|off)
+    Toggles debug logging
+/raffle [Item Link] test-roll
+    Shows a test roll window for the item
+/raffle [Item Link] tradable
+    Returns if LootRaffle thinks the item is tradable
+/raffle [Item Link] usable (unit)
+    Returns if LootRaffle thinks the item is usable by the unit. Defaults to 'player' unit
+/raffle [Item Link] prompt
+    Triggers the raffle prompt window for the linked item
+
+]])
             return
         end
 
