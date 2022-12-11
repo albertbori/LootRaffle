@@ -223,6 +223,7 @@ local function OnWhisperReceived(msg, author, language, status, msgid, unknown, 
 end
 
 local function OnItemInfoRecieved(itemId, success)
+    LootRaffle.Log("OnItemInfoRecieved("..itemId..", "..tostring(success).. ")")
     local name, itemLink = GetItemInfo(itemId)
     if not itemLink then return end
     local deadLink = LootRaffle_GetItemNameFromLink(itemLink)
