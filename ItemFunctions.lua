@@ -217,16 +217,19 @@ function LootRaffle_GetItemTooltipTableByBagSlot(bag, slot)
     itemTooltip:SetBagItem(bag, slot)
     return LootRaffle_GetItemTooltipTable(itemTooltip)
 end
+
 function LootRaffle_GetItemTooltipTableByItemLink(itemLink)
     local itemTooltip = LootRaffle_BuildItemTooltip()
     itemTooltip:SetHyperlink(itemLink)
     return LootRaffle_GetItemTooltipTable(itemTooltip)
 end
+
 function LootRaffle_BuildItemTooltip()
     local itemTooltip = CreateFrame("GameTooltip", "LootRaffle_ParseItemTooltip", nil, "GameTooltipTemplate")
     itemTooltip:SetOwner(UIParent, "ANCHOR_NONE")
     return itemTooltip
 end
+
 function LootRaffle_GetItemTooltipTable(itemTooltip)
     local tooltipTable = {}
     itemTooltip:Show()
