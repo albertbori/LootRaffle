@@ -8,7 +8,7 @@ function SlashCmdList.LootRaffle(msg, editbox)
     elseif msg == "hide" then
         -- LootRaffle_Frame:Hide();
     elseif string.find(msg, "^data") then
-        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
+        local itemLink = select(2, GetItemInfo(msg)) or C_Container.GetContainerItemLink(0, 1)
         if itemLink then
             local tooltipData = LootRaffle_GetItemTooltipTableByItemLink(itemLink)
             print("--", itemLink, "--")
@@ -53,16 +53,22 @@ function SlashCmdList.LootRaffle(msg, editbox)
     elseif string.find(msg, "showignore") then
         print("[LootRaffle] Showing ignore list...")
         LootRaffle_ShowIgnored()
-    elseif string.find(msg, "test-roll") then
-        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
-        print("[LootRaffle] Testing item: "..itemLink)
+    elseif string.find(msg, "loot") then
+        local itemLink = select(2, GetItemInfo(msg)) or C_Container.GetContainerItemLink(0, 1)
+        print("[LootRaffle] Testing pretend looting of: "..itemLink)
+        if itemLink then
+            LootRaffle_ProcessLootedItem("You received loot: "..itemLink)
+        end
+    elseif string.find(msg, "roll") then
+        local itemLink = select(2, GetItemInfo(msg)) or C_Container.GetContainerItemLink(0, 1)
+        print("[LootRaffle] Showing roll window for: "..itemLink)
         if itemLink then
             local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
             local playerName, playerRealmName = UnitFullName('player')
             LootRaffle_ShowRollWindow(itemLink, playerName, playerRealmName)
         end
     elseif string.find(msg, "tradable") then
-        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
+        local itemLink = select(2, GetItemInfo(msg)) or C_Container.GetContainerItemLink(0, 1)
         print("[LootRaffle] Testing if item: "..itemLink.." is tradable.")
         if itemLink then
             local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
@@ -73,7 +79,7 @@ function SlashCmdList.LootRaffle(msg, editbox)
             end
         end
     elseif string.find(msg, "usable") then
-        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
+        local itemLink = select(2, GetItemInfo(msg)) or C_Container.GetContainerItemLink(0, 1)
         local unitName = string.match(msg, "usable ([%a%d]+)")
         if not unitName then unitName = "player" end
         if not UnitClass(unitName) then
@@ -89,7 +95,7 @@ function SlashCmdList.LootRaffle(msg, editbox)
             end
         end
     elseif string.find(msg, "prompt") then
-        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
+        local itemLink = select(2, GetItemInfo(msg)) or C_Container.GetContainerItemLink(0, 1)
         print("[LootRaffle] Testing prompt for item: "..itemLink)
         if itemLink then
             LootRaffle_PromptForRaffle(itemLink)
@@ -117,7 +123,9 @@ function SlashCmdList.LootRaffle(msg, editbox)
 -- LootRaffle Debug Commands --
 /raffle logging (on|off)
     Toggles debug logging
-/raffle [Item Link] test-roll
+/raffle [Item Link] loot
+    Simulates looting of the linked item
+/raffle [Item Link] roll
     Shows a test roll window for the item
 /raffle [Item Link] tradable
     Returns if LootRaffle thinks the item is tradable
@@ -236,7 +244,7 @@ local function OnWhisperReceived(msg, author, language, status, msgid, unknown, 
 end
 
 local function OnItemInfoRecieved(itemId, success)
-    LootRaffle.Log("OnItemInfoRecieved("..itemId..", "..tostring(success).. ")")
+    --LootRaffle.Log("OnItemInfoRecieved("..itemId..", "..tostring(success).. ")")
     local name, itemLink = GetItemInfo(itemId)
     if not itemLink then return end
     local deadLink = LootRaffle_GetItemNameFromLink(itemLink)
