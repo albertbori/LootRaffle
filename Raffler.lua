@@ -22,7 +22,13 @@ function LootRaffle_ProcessLootedItem(itemParam, attempt)
         return
     end
 
-    local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
+    local isFuzzySearch = false
+    if attempt == LootRaffle.MaxItemSearchAttempts then --last-ditch effort to find item in bags by using fuzzy match
+        LootRaffle.Log("Attempting final loot process with fuzzy search for item:", "\""..itemParam.."\"")
+        isFuzzySearch = true
+    end
+
+    local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink, isFuzzySearch)
     if not bag or not slot then
         LootRaffle.Log("Bag and slot not yet available for:", itemLink)
         LootRaffle_WaitToProcessLootedItem(itemParam, attempt)

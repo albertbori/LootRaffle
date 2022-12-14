@@ -1,8 +1,10 @@
 local _, LootRaffle_Local=...
 
-function LootRaffle_GetTradableItemBagPosition(itemLink)
-    LootRaffle.Log("Searching for", itemLink, "in bags...")
-    local variantFragmentPattern = LootRaffle_EscapePatternCharacters(select(1, GetItemInfo(itemLink))).." of "
+function LootRaffle_GetTradableItemBagPosition(itemLink, isFuzzy)
+    LootRaffle.Log("Searching for", itemLink, "(fuzzy: "..tostring(isFuzzy)..") in bags...")
+    local itemName = select(1, GetItemInfo(itemLink))
+    local fuzzyItemName = LootRaffle_EscapePatternCharacters("h["..itemName.."]")
+    local variantFragmentPattern = LootRaffle_EscapePatternCharacters(itemName.." of ")
     for bag = BACKPACK_CONTAINER, NUM_TOTAL_EQUIPPED_BAG_SLOTS do
         --LootRaffle.Log("Searching bag", bag)
 	    for slot = 1,  C_Container.GetContainerNumSlots(bag) do
@@ -10,13 +12,14 @@ function LootRaffle_GetTradableItemBagPosition(itemLink)
             if containerItemLink then
                 local isNameMatch = false
 
-                containerItemLink = string.gsub(containerItemLink, "Player-[-%a%d]+", "") -- try removing crafter player id, ie: "Player-1190-0B8EB803" which doesn't appear in chat-linked item links
-                --LootRaffle.Log("Checking "..containerItemLink..":\n"..gsub(containerItemLink, "\124", "\124\124").."\nagainst\n"..gsub(itemLink, "\124", "\124\124").."\nfound in slot: "..bag..","..slot)
                 if containerItemLink == itemLink then
                     LootRaffle.Log(itemLink.." found in slot: "..bag..","..slot)
                     isNameMatch = true
                 elseif string.find(containerItemLink, variantFragmentPattern) then -- check for variant. "Bracers of Intellect", etc.
                     LootRaffle.Log("Green item variant for "..itemLink.." found in slot: "..bag..","..slot)
+                    isNameMatch = true
+                elseif isFuzzy and string.find(containerItemLink, fuzzyItemName) then
+                    LootRaffle.Log("Fuzzy match "..fuzzyItemName.." found in "..gsub(containerItemLink, "\124", "\124\124").." for "..itemLink.." in slot: "..bag..","..slot)
                     isNameMatch = true
                 end
 
