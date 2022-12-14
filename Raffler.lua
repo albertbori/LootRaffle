@@ -3,7 +3,7 @@ local _, LootRaffle_Local=...
 function LootRaffle_ProcessLootedItem(itemParam, attempt)
     -- attempt to find the item info and slot info of each looted item
     attempt = (attempt or 0) + 1
-    if attempt > 10 then --max retries to find the item data
+    if attempt > LootRaffle.MaxItemSearchAttempts then --max retries to find the item data
         LootRaffle.Log("Max loot processing retries for item:", "\""..itemParam.."\"")
         return
     end
