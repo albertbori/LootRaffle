@@ -1,7 +1,7 @@
 ## Interface: 100002
 ## Title: LootRaffle
 ## Author: Taunkah - Doomhammer
-## Version: 1.2.8
+## Version: 1.2.10
 ## Notes: Easily share loot with your party or raid.
 ## SavedVariables: LootRaffle_DB
 
