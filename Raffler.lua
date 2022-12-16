@@ -3,7 +3,7 @@ local _, LootRaffle_Local=...
 function LootRaffle_ProcessLootedItem(itemParam, attempt)
     -- attempt to find the item info and slot info of each looted item
     attempt = (attempt or 0) + 1
-    if attempt > 10 then --max retries to find the item data
+    if attempt > LootRaffle.MaxItemSearchAttempts then --max retries to find the item data
         LootRaffle.Log("Max loot processing retries for item:", "\""..itemParam.."\"")
         return
     end
@@ -22,7 +22,13 @@ function LootRaffle_ProcessLootedItem(itemParam, attempt)
         return
     end
 
-    local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
+    local isFuzzySearch = false
+    if attempt == LootRaffle.MaxItemSearchAttempts then --last-ditch effort to find item in bags by using fuzzy match
+        LootRaffle.Log("Attempting final loot process with fuzzy search for item:", "\""..itemParam.."\"")
+        isFuzzySearch = true
+    end
+
+    local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink, isFuzzySearch)
     if not bag or not slot then
         LootRaffle.Log("Bag and slot not yet available for:", itemLink)
         LootRaffle_WaitToProcessLootedItem(itemParam, attempt)
@@ -59,7 +65,7 @@ end
 function LootRaffle_TryPromptForRaffle(itemLink)
     if itemLink then
         if LootRaffle.PossibleRafflePromptShown then
-            LootRaffle.Log("Prompt already shown. Queueing "..itemLink.."...")
+            LootRaffle.Log("Prompt already shown. Queuing "..itemLink.."...")
             table.insert(LootRaffle.PossibleRaffleItems, itemLink)
             LootRaffle.PossibleRaffleItemCount = LootRaffle.PossibleRaffleItemCount + 1
         else

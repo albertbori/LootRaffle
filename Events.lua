@@ -8,7 +8,7 @@ function SlashCmdList.LootRaffle(msg, editbox)
     elseif msg == "hide" then
         -- LootRaffle_Frame:Hide();
     elseif string.find(msg, "^data") then
-        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
+        local itemLink = select(2, GetItemInfo(msg)) or C_Container.GetContainerItemLink(0, 1)
         if itemLink then
             local tooltipData = LootRaffle_GetItemTooltipTableByItemLink(itemLink)
             print("--", itemLink, "--")
@@ -53,16 +53,22 @@ function SlashCmdList.LootRaffle(msg, editbox)
     elseif string.find(msg, "showignore") then
         print("[LootRaffle] Showing ignore list...")
         LootRaffle_ShowIgnored()
-    elseif string.find(msg, "test") then
-        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
-        print("[LootRaffle] Testing item: "..itemLink)
+    elseif string.find(msg, "loot") then
+        local itemLink = select(2, GetItemInfo(msg)) or C_Container.GetContainerItemLink(0, 1)
+        print("[LootRaffle] Testing pretend looting of: "..itemLink)
+        if itemLink then
+            LootRaffle_ProcessLootedItem("You received loot: "..itemLink)
+        end
+    elseif string.find(msg, "roll") then
+        local itemLink = select(2, GetItemInfo(msg)) or C_Container.GetContainerItemLink(0, 1)
+        print("[LootRaffle] Showing roll window for: "..itemLink)
         if itemLink then
             local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
             local playerName, playerRealmName = UnitFullName('player')
             LootRaffle_ShowRollWindow(itemLink, playerName, playerRealmName)
         end
     elseif string.find(msg, "tradable") then
-        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
+        local itemLink = select(2, GetItemInfo(msg)) or C_Container.GetContainerItemLink(0, 1)
         print("[LootRaffle] Testing if item: "..itemLink.." is tradable.")
         if itemLink then
             local bag, slot = LootRaffle_GetTradableItemBagPosition(itemLink)
@@ -73,9 +79,13 @@ function SlashCmdList.LootRaffle(msg, editbox)
             end
         end
     elseif string.find(msg, "usable") then
-        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
-        local unitName = string.match(msg, "usable (%w+) ")
+        local itemLink = select(2, GetItemInfo(msg)) or C_Container.GetContainerItemLink(0, 1)
+        local unitName = string.match(msg, "usable ([%a%d]+)")
         if not unitName then unitName = "player" end
+        if not UnitClass(unitName) then
+            print("Invalid unit name:", unitName)
+            return
+		end
         print("[LootRaffle] Testing if item: "..itemLink.." is usable by "..unitName)
         if itemLink then
             if LootRaffle_UnitCanUseItem(unitName, itemLink) then
@@ -85,7 +95,7 @@ function SlashCmdList.LootRaffle(msg, editbox)
             end
         end
     elseif string.find(msg, "prompt") then
-        local itemLink = select(2, GetItemInfo(msg)) or GetContainerItemLink(0, 1)
+        local itemLink = select(2, GetItemInfo(msg)) or C_Container.GetContainerItemLink(0, 1)
         print("[LootRaffle] Testing prompt for item: "..itemLink)
         if itemLink then
             LootRaffle_PromptForRaffle(itemLink)
@@ -94,14 +104,37 @@ function SlashCmdList.LootRaffle(msg, editbox)
         -- try for item
         local name, itemLink, quality, itemLevel, requiredLevel, class, subClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(msg)
         if not name then
-            print("LootRaffle commands:"); 
-            print(" - '[Item Link]': Starts a raffle");
-            print(" - 'logging (on|off)': Toggles logging");
-            print(" - 'auto-detect (on|off)': Toggles Automatic raffle prompt when you loot a tradable item.");
-            print(" - 'ignore [Item Link]': Adds [Item Link] to your ignore list. Ignored items won't prompt you to start a raffle.");
-            print(" - 'unignore [Item Link]': Removes [Item Link] from your ignore list.");
-            print(" - 'showignore': Prints out your ignore list.");
-            print(" - 'clearignore': Clears the ignore list.");
+            print([[
+
+-- LootRaffle Commands --
+/raffle [Item Link]
+    Starts a raffle
+/raffle auto-detect (on|off)
+    Toggles Automatic raffle prompt when you loot a tradable item
+/raffle ignore [Item Link]
+    Adds [Item Link] to your ignore list. Ignored items won't prompt you to start a raffle
+/raffle unignore [Item Link]
+    Removes [Item Link] from your ignore list
+/raffle showignore
+    Prints out your ignore list
+/raffle clearignore
+    Clears the ignore list
+
+-- LootRaffle Debug Commands --
+/raffle logging (on|off)
+    Toggles debug logging
+/raffle [Item Link] loot
+    Simulates looting of the linked item
+/raffle [Item Link] roll
+    Shows a test roll window for the item
+/raffle [Item Link] tradable
+    Returns if LootRaffle thinks the item is tradable
+/raffle [Item Link] usable (unit)
+    Returns if LootRaffle thinks the item is usable by the unit. Defaults to 'player' unit
+/raffle [Item Link] prompt
+    Triggers the raffle prompt window for the linked item
+
+]])
             return
         end
 
@@ -144,11 +177,20 @@ end
 local function OnItemLooted(lootMessage, sender, language, channelString, targetName, flags, unknown, channelNumber, channelName, unknown, counter)
     local playerName = LootRaffle_UnitFullName("player")
     if playerName ~= targetName then return end
-    LootRaffle.Log("Looted item detected for ", playerName, "lootMessage:", lootMessage, "auto-detect:", LootRaffle.AutoDetectLootedItems, "grouped:", IsInGroup())
-    if not LootRaffle.AutoDetectLootedItems then return end
-    if not IsInGroup() then return end
+    LootRaffle.Log("OnItemLooted", playerName, '"'..lootMessage..'"')
+    if not LootRaffle.AutoDetectLootedItems then
+        LootRaffle.Log("Skipping raffle check: auto-detect loot items is 'off'")
+		return
+	end
+    if not IsInGroup() then
+        LootRaffle.Log("Skipping raffle check: Player is not in a group")
+		return
+	end
     local instanceType = select(2, IsInInstance())
-    if instanceType ~= "party" and instanceType ~= "raid" then return end
+    if instanceType ~= "party" and instanceType ~= "raid" then
+        LootRaffle.Log("Skipping raffle check: Player is not in a valid instance type:", instanceType)
+        return
+    end
     LootRaffle_ProcessLootedItem(lootMessage)
 end
 
@@ -159,7 +201,7 @@ local function OnMessageRecieved(prefix, message)
     if prefix == LootRaffle.NEW_RAFFLE_MESSAGE then
         local rafflerName, raffleId, itemLink = LootRaffle_Notification_ParseRaffleStart(message)
         if rafflerName == LootRaffle_UnitFullName("player") then return end
-        LootRaffle.Log("New raffle message recieved from: ", rafflerName, " for id:", raffleId, "item: ", itemLink)
+        LootRaffle.Log("New raffle message received from: ", rafflerName, " for id:", raffleId, "item: ", itemLink)
         local name = GetItemInfo(itemLink)
         if name then
             LootRaffle_HandleNewRaffleNotification(itemLink, rafflerName, raffleId)
@@ -172,7 +214,7 @@ local function OnMessageRecieved(prefix, message)
     elseif prefix == LootRaffle.ROLL_ON_ITEM_MESSAGE then
         local rafflerName, raffleId, itemLink, rollerName, rollType = LootRaffle_Notification_ParseRoll(message)
         if rafflerName ~= LootRaffle_UnitFullName("player") then return end
-        LootRaffle.Log("Roll message recieved from:", rollerName, rollType, "for:", itemLink)
+        LootRaffle.Log("Roll message received from:", rollerName, rollType, "for:", itemLink)
         LootRaffle_HandleRollNotification(raffleId, rollerName, rollType)
     end
 end
@@ -202,6 +244,7 @@ local function OnWhisperReceived(msg, author, language, status, msgid, unknown, 
 end
 
 local function OnItemInfoRecieved(itemId, success)
+    --LootRaffle.Log("OnItemInfoRecieved("..itemId..", "..tostring(success).. ")")
     local name, itemLink = GetItemInfo(itemId)
     if not itemLink then return end
     local deadLink = LootRaffle_GetItemNameFromLink(itemLink)

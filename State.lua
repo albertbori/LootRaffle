@@ -28,5 +28,6 @@ LootRaffle = {
     PlayerAcceptedTrade = false,
     IgnoredItems = {},
     ItemInfoCache = {},
-    ItemRequests = {}
+    ItemRequests = {},
+    MaxItemSearchAttempts = 5
 }

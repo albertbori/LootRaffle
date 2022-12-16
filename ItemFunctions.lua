@@ -1,41 +1,44 @@
 local _, LootRaffle_Local=...
 
-function LootRaffle_GetTradableItemBagPosition(itemLink)
-    LootRaffle.Log("Searching for", itemLink, "in bags...")
-    local variantFragmentPattern = LootRaffle_EscapePatternCharacters(select(1, GetItemInfo(itemLink))).." of "
+function LootRaffle_GetTradableItemBagPosition(itemLink, isFuzzy)
+    LootRaffle.Log("Searching for", itemLink, "(fuzzy: "..tostring(isFuzzy)..") in bags...")
+    local itemName = select(1, GetItemInfo(itemLink))
+    local fuzzyItemName = LootRaffle_EscapePatternCharacters("h["..itemName.."]")
+    local variantFragmentPattern = LootRaffle_EscapePatternCharacters(itemName.." of ")
     for bag = BACKPACK_CONTAINER, NUM_TOTAL_EQUIPPED_BAG_SLOTS do
-        LootRaffle.Log("Searching bag", bag)
+        --LootRaffle.Log("Searching bag", bag)
 	    for slot = 1,  C_Container.GetContainerNumSlots(bag) do
             local containerItemLink = C_Container.GetContainerItemLink(bag, slot)
             if containerItemLink then
                 local isNameMatch = false
 
-                containerItemLink = string.gsub(containerItemLink, "Player-[-%a%d]+", "") -- try removing crafter player id, ie: "Player-1190-0B8EB803" which doesn't appear in chat-linked item links
-                --LootRaffle.Log("Checking "..containerItemLink..":\n"..gsub(containerItemLink, "\124", "\124\124").."\nagainst\n"..gsub(itemLink, "\124", "\124\124").."\nfound in slot: "..bag..","..slot)
                 if containerItemLink == itemLink then
                     LootRaffle.Log(itemLink.." found in slot: "..bag..","..slot)
                     isNameMatch = true
                 elseif string.find(containerItemLink, variantFragmentPattern) then -- check for variant. "Bracers of Intellect", etc.
                     LootRaffle.Log("Green item variant for "..itemLink.." found in slot: "..bag..","..slot)
                     isNameMatch = true
+                elseif isFuzzy and string.find(containerItemLink, fuzzyItemName) then
+                    LootRaffle.Log("Fuzzy match "..fuzzyItemName.." found in "..gsub(containerItemLink, "\124", "\124\124").." for "..itemLink.." in slot: "..bag..","..slot)
+                    isNameMatch = true
                 end
 
                 if isNameMatch then
-			        local isTradeable = LootRaffle_IsTradableItem(containerItemLink, bag, slot)
-                    if isTradeable then
+			        local isTradable = LootRaffle_IsTradableItem(containerItemLink, bag, slot)
+                    if isTradable then
                         return bag, slot
                     else
-                        LootRaffle.Log("Slot", bag..","..slot, "is not tradeable")
+                        LootRaffle.Log("Slot", bag..","..slot, "matched but is not tradable")
 			        end
                 else
-                    LootRaffle.Log("Slot", bag..","..slot, "name did not match")
+                    --LootRaffle.Log("Slot", bag..","..slot, "name did not match")
 				end
             else
-                LootRaffle.Log("Slot", bag..","..slot, "contains no item")
+                --LootRaffle.Log("Slot", bag..","..slot, "contains no item")
 		    end
         end
     end
-    LootRaffle.Log(itemLink, "not found in bags or wasn't tradeable.")
+    LootRaffle.Log(itemLink, "no tradable match was found in bags")
 end
 
 function LootRaffle_IsTradableItem(itemLink, bag, slot)
@@ -87,7 +90,7 @@ function LootRaffle_UnitCanUseItem(unitName, itemLink)
             end
         end
         if not found then
-            LootRaffle.Log("Player CANNOT use "..item.ItemClass.." of type "..item.ItemSubClass..". Wrong reilc type '"..item.RelicType.."' for class: "..classCodeName..".")
+            LootRaffle.Log("Player CANNOT use "..item.ItemClass.." of type "..item.ItemSubClass..". Wrong relic type '"..item.RelicType.."' for class: "..classCodeName..".")
             return false
         end
     end
@@ -97,12 +100,7 @@ function LootRaffle_UnitCanUseItem(unitName, itemLink)
 end
 
 function LootRaffle_GetItemInfo(itemLink, bag, slot)
-    -- if LootRaffle.ItemInfoCache[itemLink] then --TODO Make sure this gets cleared at the end of all raffles and caches item link vs bag/slot searches separately
-    --     return LootRaffle.ItemInfoCache[itemLink]
-    -- end
-
     local name, link, quality, itemLevel, requiredLevel, itemClass, itemSubClass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemLink)
-    --local statsTable = GetItemStats(itemLink) --useless. Doesn't return stats for other specs
 
     local itemInfo = {
         Name = name,
@@ -116,16 +114,22 @@ function LootRaffle_GetItemInfo(itemLink, bag, slot)
         Texture = texture,
         Stats = {}
     }
-    local tooltipTable = {}
+    local tooltipData = {}
+
     if bag and slot then
-        tooltipTable = LootRaffle_GetItemTooltipTableByBagSlot(bag, slot)
+        tooltipData = C_TooltipInfo.GetBagItem(bag, slot)
     else
-        tooltipTable = LootRaffle_GetItemTooltipTableByItemLink(itemLink)
+        tooltipData = C_TooltipInfo.GetHyperlink(itemLink)
     end
-    for i in pairs(tooltipTable) do
-        LootRaffle_CategorizeTooltipText(tooltipTable[i], itemInfo)
+
+    TooltipUtil.SurfaceArgs(tooltipData)
+    for _, line in ipairs(tooltipData.lines) do
+        TooltipUtil.SurfaceArgs(line)
+        LootRaffle_CategorizeTooltipText(line.leftText, itemInfo)
     end
-    -- LootRaffle.ItemInfoCache[itemLink] = itemInfo
+
+    --DevTools_Dump({ tooltipData })
+
     return itemInfo
 end
 
@@ -161,7 +165,7 @@ function LootRaffle_CategorizeTooltipText(text, itemInfo)
     end
 
     --check if trading this BoP is still allowed
-    --splits the template string on the macro text (%s), checks to see if both halfs match
+    --splits the template string on the macro text (%s), checks to see if both halves match
     if not itemInfo.TemporarilyTradable then
         local pattern = LootRaffle_EscapePatternCharacters(BIND_TRADE_TIME_REMAINING) -- "You may trade this item with players that were also eligible to loot this item for the next %s."
         pattern = string.gsub(pattern, "%%%%s", ".+")
@@ -209,36 +213,4 @@ function LootRaffle_CategorizeTooltipText(text, itemInfo)
 
     --TODO:
     -- Sockets
-end
-
--- Builds an item tooltip and then scans the tooltip to extract the text into a table
-function LootRaffle_GetItemTooltipTableByBagSlot(bag, slot)
-    local itemTooltip = LootRaffle_BuildItemTooltip()
-    itemTooltip:SetBagItem(bag, slot)
-    return LootRaffle_GetItemTooltipTable(itemTooltip)
-end
-function LootRaffle_GetItemTooltipTableByItemLink(itemLink)
-    local itemTooltip = LootRaffle_BuildItemTooltip()
-    itemTooltip:SetHyperlink(itemLink)
-    return LootRaffle_GetItemTooltipTable(itemTooltip)
-end
-function LootRaffle_BuildItemTooltip()
-    local itemTooltip = CreateFrame("GameTooltip", "LootRaffle_ParseItemTooltip", nil, "GameTooltipTemplate")
-    itemTooltip:SetOwner(UIParent, "ANCHOR_NONE")
-    return itemTooltip
-end
-function LootRaffle_GetItemTooltipTable(itemTooltip)
-    local tooltipTable = {}
-    itemTooltip:Show()
-    for i = 1, itemTooltip:NumLines() do
-        local tooltipLine = _G["LootRaffle_ParseItemTooltipTextLeft"..i]
-        if tooltipLine then
-            local text = tooltipLine:GetText()
-            table.insert(tooltipTable, text)
-        else
-            LootRaffle.Log("Failed to read parsing tooltip text line", i)
-        end
-    end
-    itemTooltip:Hide()
-    return tooltipTable
 end
